@@ -1026,7 +1026,7 @@ function hazards(){const an=currentAnalysis();const key=_anKey+JSON.stringify(HA
   out.sort((a,b)=>a.m-b.m);return _haz=out}
 const HAZICON={narrow:'⇥⇤',shore:'▌',shallow:'≈',buoy:'●',user:'⚠'};
 const HAZNAME={narrow:'Narrow water',shore:'Shore close',shallow:'Marked shallows',buoy:'Channel buoy'};
-for(const t in HAZNAME){const ic=HAZICON[t],w=ic.length>1?11:7;LGI['hz_'+t]=`<svg width="${2*w+2}" height="16"><rect x="1" y="1" width="${2*w}" height="14" rx="3.5" fill="#fff" stroke="#d8322a" stroke-width="1.6"/><text x="${w+1}" y="11.6" font-size="${ic.length>1?8.5:10.5}" font-weight="800" text-anchor="middle" fill="#d8322a">${ic}</text></svg>`}
+for(const t in HAZNAME){const ic=HAZICON[t];LGI['hz_'+t]=t==='buoy'?'<svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#d8322a"/></svg>':t==='shore'?'<svg width="14" height="14"><rect x="4" y="1" width="6" height="12" fill="#d8322a"/></svg>':`<span style="color:#d8322a;font-weight:800;margin-right:4px">${ic}</span>`}
 function hazardListHTML(){const hz=hazards();
   return`<h2>Hazards on this line</h2><label class="inline" style="margin:0 0 6px"><input type="checkbox" id="hazshow" ${S.showHaz?'checked':''}> Show hazards on the map</label>
   ${hz.length?`<ul class="hazlist">${hz.map(h=>`<li><span class="hi" aria-hidden="true">${HAZICON[h.kind]}</span><div><b>${fmtM(h.m)}</b> · ${esc(h.title)}<br><span class="sub">${esc(h.text)}</span></div></li>`).join('')}</ul>`:'<p class="sub">Nothing found along this line.</p>'}
@@ -1053,9 +1053,14 @@ function setShowCalls(v){S.showCalls=v;LS.set('cp.showCalls',v);$('#zcall').setA
 function drawHazards(){const g=$('#hazards');if(!g)return;g.innerHTML='';if(!S.showHaz){drawLegend();return}const k=mpp();const an=currentAnalysis();const f=an.len/an.raw;
   for(const h of hazards()){if(h.kind==='narrow'||h.kind==='shore'){const pts=[];for(let m=h.m;m<=h.m1+1;m+=8){pts.push(pointAt(an.pts,an.cum,m/f).p)}if(pts.length>1)el('path',{d:pathD(pts),fill:'none',stroke:'#d8322a','stroke-width':h.kind==='narrow'?9:6,opacity:.35,'stroke-linecap':'round','vector-effect':'non-scaling-stroke'},g)}}
   // a marker for each hazard on the active line; hover (or tap) for what it is
-  for(const h of hazards()){if(h.kind==='user')continue;const [x,y]=h.p,r=7*k;const ic=HAZICON[h.kind]||'⚠',w=ic.length>1?r*1.5:r;const m=el('g',{'data-tip':`<b>${ic} ${esc(h.title)}</b>${esc(fmtM(h.m))} from the start<br><span>${esc(h.text)}</span>`,style:'cursor:help'},g);
-    el('rect',{x:x-w,y:-y-r,width:2*w,height:2*r,rx:r*.45,fill:'#fff',stroke:'#d8322a','stroke-width':2,'vector-effect':'non-scaling-stroke'},m);
-    const t=el('text',{x,y:-y+r*.38,'font-size':(ic.length>1?8.5:10.5)*k,'font-weight':800,'text-anchor':'middle',fill:'#d8322a','font-family':'var(--f-body)'},m);t.textContent=ic}
+  // placed where the description says: narrow water and shore at the distance shown (shore icon on the shore's side), buoys and shallows on the spot itself
+  for(const h of hazards()){if(h.kind==='user')continue;let x,y;const r=8*k;
+    if(h.kind==='narrow'||h.kind==='shore'){const q=pointAt(an.pts,an.cum,Math.min(an.raw,h.m/f));const a=q.h*Math.PI/180,off=h.kind==='shore'?(h.side==='port'?-12:12)*k:0;x=q.p[0]+Math.cos(a)*off;y=q.p[1]-Math.sin(a)*off}else[x,y]=h.p;
+    const ic=HAZICON[h.kind]||'⚠';const m=el('g',{'data-tip':`<b>${ic} ${esc(h.title)}</b>${esc(fmtM(h.m))} from the start<br><span>${esc(h.text)}</span>`,style:'cursor:help'},g);
+    el('circle',{cx:x,cy:-y,r:r*1.3,fill:'transparent'},m);
+    if(h.kind==='buoy')el('circle',{cx:x,cy:-y,r:r*.6,fill:'#d8322a',stroke:'#fff','stroke-width':2,'vector-effect':'non-scaling-stroke'},m);
+    else if(h.kind==='shore')el('rect',{x:x-r*.35,y:-y-r*.75,width:r*.7,height:r*1.5,fill:'#d8322a',stroke:'#fff','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},m);
+    else{const t=el('text',{x,y:-y+r*.4,'font-size':(ic.length>1?12:15)*k,'font-weight':800,'text-anchor':'middle',fill:'#d8322a','font-family':'var(--f-body)','paint-order':'stroke',stroke:'#fff','stroke-width':3*k,'stroke-linejoin':'round'},m);t.textContent=ic}}
   for(const u of HAZ_USER){const x=u.x,y=-u.y,sz=8*k;el('path',{d:`M${x},${y-sz}L${x+sz},${y+sz*.75}L${x-sz},${y+sz*.75}Z`,fill:'#d8322a',stroke:'#fff','stroke-width':1.4,'vector-effect':'non-scaling-stroke','data-tip':`<b>⚠ ${esc(u.name)}</b>${u.note?'<span>'+esc(u.note)+'</span>':'<span>Marked by your team.</span>'}`,style:'cursor:help'},g);
     const e=el('text',{x,y:y+sz*.55,'font-size':9*k,'text-anchor':'middle','font-weight':800,fill:'#fff','font-family':'var(--f-body)'},g);e.textContent='!';
     const t=el('text',{x:x+11*k,y:y+3*k,'font-size':11*k,'font-weight':700,'font-family':'var(--f-body)',fill:'#b3261e','paint-order':'stroke',stroke:'var(--water)','stroke-width':3*k},g);t.textContent=u.name}
