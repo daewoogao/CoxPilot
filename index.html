@@ -1,4 +1,4 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CoxPilot American Lake</title>
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CoxPilot</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -380,7 +380,8 @@ Object.assign(REGS.al,{name:'American Lake Fall Classic',date:'Sat, Oct 3, 2026'
 REGS.hotl.note='Traced from the official Head of the Lake course map (north-up, scaled from its scale bar) and stretched slightly so the marked course measures {len} m. Orange race buoys are drawn where the map shows them; yellow buoys stay on your starboard through the Pocock turn. Not yet checked against satellite imagery.';
 REGS.al.raceDay='2026-10-03';
 REGS.al.legend=[['c5k','5K Race Course'],['c3k','3K Race Course'],['chute','Start Chute'],['guide','Guide Buoy'],['sf','Start/Finish Buoy'],['turn','Turn Buoy'],['marshal','Safety Marshall']];REGS.hotl.guideTerm='Orange race buoys';REGS.hotl.raceDay='2026-11-01';Object.assign(REGS.hotl.wx,{lat:47.6475,lon:-122.3045});
-const REG=REGS[LS.get('cp.reg','al')]?LS.get('cp.reg','al'):'al';
+// Head of the Lake opens first (Audrey, 2026-10-31); a viewer's own pick is remembered
+const REG=REGS[LS.get('cp.reg','hotl')]?LS.get('cp.reg','hotl'):'hotl';
 const D=REGS[REG];const FALLBACK_TAF=FALLBACKS[REG];
 const RK=k=>k+'.'+REG; // per-regatta storage keys
 document.title=D.title;
