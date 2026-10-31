@@ -148,6 +148,10 @@ td.num,th.num{text-align:right}
 .windbadge{pointer-events:auto}
 .hstep{border:1px solid var(--rule);background:var(--bg);border-radius:6px;width:28px;height:34px;cursor:pointer;font-size:20px;line-height:1;font-weight:700}
 .zoombtns{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px}
+[hidden]{display:none!important}
+.zoombtns button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.maptip{position:absolute;z-index:5;max-width:260px;background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:7px 10px;font-size:13px;line-height:1.35;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none}.maptip b{display:block;font-size:14px}.maptip span{color:var(--muted)}
+.call .cn{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:10px;background:var(--ink);color:var(--panel);font-size:11px;font-weight:700;margin-right:6px;padding:0 4px;vertical-align:1px}
 .zoombtns button{width:36px;height:36px;border-radius:8px;border:1px solid var(--rule);background:var(--panel);cursor:pointer;font-size:18px;font-weight:700}
 .taf{font-family:var(--f-mono);font-size:12px;white-space:pre-wrap;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:10px;margin:0;overflow-x:auto}
 .hours{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
@@ -286,11 +290,13 @@ body:has(.app[data-layout="top"]),body:has(.app[data-layout="big"]){margin:0;ove
       <g id="marks"></g>
       <g id="hazards"></g>
       <g id="labels"></g>
+      <g id="callnums"></g>
       <g id="handles"></g>
       <g id="boat"></g>
     </svg>
     <div class="callout" id="callout" hidden><b id="calloutT"></b><span id="calloutS"></span></div>
-    <div class="zoombtns"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Fit course" style="font-size:12px">FIT</button><button id="zmap" aria-label="Map style" title="Switch between the drawn map and satellite" style="font-size:10px;line-height:1.1">MAP</button><button id="v3d" aria-label="3D cox view" title="3D cox view" style="font-size:13px;background:var(--accent);color:#fff;border-color:var(--accent)">3D</button></div>
+    <div class="zoombtns"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Fit course" style="font-size:12px">FIT</button><button id="zmap" aria-label="Map style" title="Switch between the drawn map and satellite" style="font-size:10px;line-height:1.1">MAP</button><button id="zhaz" aria-label="Hazards on the map" title="Show or hide hazards on the map" style="font-size:16px">⚠</button><button id="zcall" aria-label="Call numbers on the map" title="Show or hide numbered calls on the map" style="font-size:12px">CALL</button><button id="v3d" aria-label="3D cox view" title="3D cox view" style="font-size:13px;background:var(--accent);color:#fff;border-color:var(--accent)">3D</button></div>
+    <div class="maptip" id="maptip" hidden></div>
     <div class="maplegend" id="maplegend" aria-label="Map key"></div>
     <div id="satcredit" hidden style="position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:8px;font-size:10px;color:#fff;text-shadow:0 0 3px #000;pointer-events:none">Imagery © Google</div>
     <div class="overlay-br">
@@ -498,7 +504,7 @@ function windOnLegs(an,w){
 const COLORS=['--mine','--mine2','--mine3'];
 let LP=LS.get('cp.legpace',{});
 const S={course:D.courses[LS.get(RK('cp.course'),'')]?LS.get(RK('cp.course'),''):CKEYS[0],tab:'preview',leg:-1,pos:0,playing:false,rate:30,showWarm:LS.get('cp.warm',false),
-  routes:[],activeRoute:'marked',editing:null,selPt:-1,taf:FALLBACK_TAF,tafLocal:null,nws:FALLBACK_NWS[REG]||null,hourIdx:-1,startT:LS.get(RK('cp.start'),null),events:FALLBACK_EVENTS[REG]||[],eventKey:LS.get(RK('cp.event'),''),db:null,dbState:'connecting'};
+  routes:[],activeRoute:'marked',editing:null,selPt:-1,taf:FALLBACK_TAF,tafLocal:null,showHaz:LS.get('cp.showHaz',true),showCalls:LS.get('cp.showCalls',false),nws:FALLBACK_NWS[REG]||null,hourIdx:-1,startT:LS.get(RK('cp.start'),null),events:FALLBACK_EVENTS[REG]||[],eventKey:LS.get(RK('cp.event'),''),db:null,dbState:'connecting'};
 
 /* ---------- map view ---------- */
 const svg=$('#map'), wrap=$('#mapwrap');
@@ -610,8 +616,10 @@ const LGI={c5k:'<svg width="18" height="8"><path d="M1,4H17" stroke="var(--c5k)"
   takeout:'<svg width="12" height="12"><path d="M4,0H8V4H12V8H8V12H4V8H0V4H4Z" fill="#e0302a"/></svg>',
   bridge:'<svg width="18" height="10"><path d="M1,5H17" stroke="var(--ink)" stroke-width="5" opacity=".6"/></svg>',
   haz:'<svg width="18" height="10"><path d="M2,5H16" stroke="#d8322a" stroke-width="8" opacity=".35" stroke-linecap="round"/></svg>',
-  hazu:'<svg width="14" height="12"><path d="M7,1L13,11H1Z" fill="#d8322a" stroke="#fff"/></svg>'};
-function drawLegend(){const hz=typeof hazards==='function'?hazards():[];const L=[...(D.legend||[]),...(hz.some(h=>h.kind==='narrow'||h.kind==='shore')?[['haz','Hazard: narrow water or shore close']]:[]),...(HAZ_USER.length?[['hazu','Hazard marked by your team']]:[])];const lgEl=$('#maplegend');lgEl.innerHTML=`<button class="lgkey" type="button" aria-expanded="${lgEl.classList.contains('open')}">Map key ${lgEl.classList.contains('open')?'▾':'▸'}</button>`+L.filter(([k])=>k!=='marshal'||D.marshal.length).map(([k,t])=>{const ic=LGI[k];return`<span>${typeof ic==='function'?ic():ic||''}${esc(t)}</span>`}).join('');lgEl.querySelector('.lgkey').onclick=()=>{lgEl.classList.toggle('open');drawLegend()}}
+  hazu:'<svg width="14" height="12"><path d="M7,1L13,11H1Z" fill="#d8322a" stroke="#fff"/></svg>',
+  hazm:'<svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="#fff" stroke="#d8322a" stroke-width="2"/><path d="M7,3.5V8" stroke="#d8322a" stroke-width="2"/><circle cx="7" cy="10.4" r="1.1" fill="#d8322a"/></svg>',
+  calln:'<svg width="16" height="16"><circle cx="8" cy="8" r="7" fill="var(--ink)"/><text x="8" y="11.2" font-size="9" font-weight="700" text-anchor="middle" fill="var(--panel)">1</text></svg>'};
+function drawLegend(){const hz=typeof hazards==='function'?hazards():[];const L=[...(D.legend||[]),...(S.showHaz&&hz.some(h=>h.kind==='narrow'||h.kind==='shore')?[['haz','Hazard: narrow water or shore close']]:[]),...(S.showHaz&&hz.some(h=>h.kind!=='user')?[['hazm','Hazard on this line (hover for details)']]:[]),...(S.showHaz&&HAZ_USER.length?[['hazu','Hazard marked by your team']]:[]),...(S.showCalls?[['calln','Cox call number (hover to read it)']]:[])];const lgEl=$('#maplegend');lgEl.innerHTML=`<button class="lgkey" type="button" aria-expanded="${lgEl.classList.contains('open')}">Map key ${lgEl.classList.contains('open')?'▾':'▸'}</button>`+L.filter(([k])=>k!=='marshal'||D.marshal.length).map(([k,t])=>{const ic=LGI[k];return`<span>${typeof ic==='function'?ic():ic||''}${esc(t)}</span>`}).join('');lgEl.querySelector('.lgkey').onclick=()=>{lgEl.classList.toggle('open');drawLegend()}}
 function drawMarks(){
   const g=$('#marks');g.innerHTML='';const k=mpp();const C=COURSES[S.course];
   const tri=(p,col,sz)=>el('path',{d:`M${p[0]},${-p[1]-sz}L${p[0]+sz*.95},${-p[1]+sz*.65}L${p[0]-sz*.95},${-p[1]+sz*.65}Z`,fill:col,stroke:'var(--ink)','stroke-width':.8,'vector-effect':'non-scaling-stroke'},g);
@@ -651,7 +659,7 @@ function drawMarks(){
     const t=el('text',{x,y:-y,'font-size':(kind==='island'?12:13)*k,'text-anchor':'middle','font-family':'var(--f-display)','font-weight':600,'letter-spacing':'.04em',fill:kind==='water'?'var(--c3k)':'var(--muted)','paint-order':'stroke',stroke:kind==='water'?'var(--water)':'var(--land)','stroke-width':3*k},lg);t.textContent=n.toUpperCase()}
   for(const [n,l,dy] of[['START',D.start,-1],[C.finishName,C.finish,1]]){const m=[(l[0][0]+l[1][0])/2,(l[0][1]+l[1][1])/2];
     const t=el('text',{x:m[0]+(n==='START'?-34*k:30*k),y:-m[1]+4*k,'font-size':12*k,'text-anchor':'middle','font-family':'var(--f-display)','font-weight':700,fill:'var(--ink)','paint-order':'stroke',stroke:'var(--water)','stroke-width':3*k},lg);t.textContent=n}
-  drawHazards();drawWind();drawHandles();drawBoat();
+  drawHazards();drawCallNums();drawWind();drawHandles();drawBoat();
 }
 function drawScale(){const k=mpp();const target=k*90;const steps=[50,100,200,250,500,1000,2000];let s=steps.find(v=>v>=target*.6)||2000;$('#scalebar').style.width=(s/k)+'px';$('#scalelab').textContent=s>=1000?(s/1000)+' km':s+' m'}
 
@@ -1018,21 +1026,34 @@ function hazards(){const an=currentAnalysis();const key=_anKey+JSON.stringify(HA
   out.sort((a,b)=>a.m-b.m);return _haz=out}
 const HAZICON={narrow:'⇥⇤',shore:'▌',shallow:'≈',buoy:'●',user:'⚠'};
 function hazardListHTML(){const hz=hazards();
-  return`<h2>Hazards on this line</h2>
+  return`<h2>Hazards on this line</h2><label class="inline" style="margin:0 0 6px"><input type="checkbox" id="hazshow" ${S.showHaz?'checked':''}> Show hazards on the map</label>
   ${hz.length?`<ul class="hazlist">${hz.map(h=>`<li><span class="hi" aria-hidden="true">${HAZICON[h.kind]}</span><div><b>${fmtM(h.m)}</b> · ${esc(h.title)}<br><span class="sub">${esc(h.text)}</span></div></li>`).join('')}</ul>`:'<p class="sub">Nothing found along this line.</p>'}
   <p class="sub">Narrow water and shore distances are measured from the traced map, so treat them as a guide. Mud banks, weeds and logs are not on the official map: mark them yourself.</p>
   <div class="row"><button class="btn" id="hazadd">${S.hazAdd?'Tap the spot on the map…':'Mark a hazard on the map'}</button>${S.hazAdd?'<button class="btn" id="hazcancel">Cancel</button>':''}</div>
   ${S.hazPend?`<div class="hazform"><input type="text" id="hazname" maxlength="40" placeholder="Name, e.g. Mud bank"><input type="text" id="haznote" maxlength="100" placeholder="Note (optional), e.g. Shallow at low water, stay north"><div class="row"><button class="btn primary" id="hazsave">Save hazard</button><button class="btn" id="hazcancel2">Cancel</button></div></div>`:''}
   ${HAZ_USER.length?`<ul class="hazlist mine">${HAZ_USER.map((u,i)=>`<li><span class="hi" aria-hidden="true">⚠</span><div><b>${esc(u.name)}</b>${u.note?'<br><span class="sub">'+esc(u.note)+'</span>':''}</div><button class="btn" data-hdel="${i}">Remove</button></li>`).join('')}</ul>`:''}`}
-function wireHazards(){const b=$('#hazadd');if(!b)return;b.onclick=()=>{S.hazAdd=true;S.hazPend=null;renderPreview()};
+function wireHazards(){if($('#hazshow'))$('#hazshow').onchange=e=>setShowHaz(e.target.checked);const b=$('#hazadd');if(!b)return;b.onclick=()=>{S.hazAdd=true;S.hazPend=null;renderPreview()};
   for(const id of['#hazcancel','#hazcancel2'])if($(id))$(id).onclick=()=>{S.hazAdd=false;S.hazPend=null;renderPreview();drawMarks()};
   if($('#hazsave')){$('#hazname').focus();$('#hazsave').onclick=()=>{const n=$('#hazname').value.trim();if(!n)return;saveHazards([...HAZ_USER,{name:n.slice(0,40),note:$('#haznote').value.trim().slice(0,100),x:+S.hazPend[0].toFixed(1),y:+S.hazPend[1].toFixed(1)}]);S.hazPend=null;S.hazAdd=false}}
   document.querySelectorAll('[data-hdel]').forEach(x=>x.onclick=()=>{if(x.dataset.sure){saveHazards(HAZ_USER.filter((_,j)=>j!==+x.dataset.hdel))}else{x.dataset.sure=1;x.textContent='Tap again to remove'}})}
 function loadHazards(){HAZ_USER=LS.get(RK('cp.haz'),[]);if(S.db){try{S.db.doc('hazards/'+REG).onSnapshot(d=>{const v=d.exists?d.data():null;HAZ_USER=(v&&Array.isArray(v.list)?v.list:[]).filter(u=>u&&typeof u.name==='string'&&isFinite(u.x)&&isFinite(u.y)).slice(0,60);_windPts&&Object.keys(_windPts).forEach(k=>delete _windPts[k]);if(S.tab==='preview')renderPreview();if(S.tab==='calls')renderCalls();drawMarks()},()=>{})}catch(e){}}}
 function saveHazards(list){HAZ_USER=list;LS.set(RK('cp.haz'),list);if(S.db)S.db.doc('hazards/'+REG).set({list}).catch(()=>{});renderPreview();drawMarks();if(S.tab==='calls')renderCalls()}
-function drawHazards(){const g=$('#hazards');if(!g)return;g.innerHTML='';const k=mpp();const an=currentAnalysis();const f=an.len/an.raw;
+// numbered cox calls along the active line, the same numbers as the Calls tab; hover (or tap) a number to read the call
+function drawCallNums(){const g=$('#callnums');if(!g)return;g.innerHTML='';if(!S.showCalls)return;const k=mpp();const an=currentAnalysis();const f=an.len/an.raw;const cs=calls();let last=null;
+  cs.forEach((c,i)=>{let {p,h}=pointAt(an.pts,an.cum,Math.min(an.raw,c.m/f));const r=h*Math.PI/180;
+    // calls close together sit to alternate sides of the line so the numbers stay readable
+    const near=last&&Math.hypot(p[0]-last.p[0],p[1]-last.p[1])<22*k;const side=near?-last.side:1;const off=13*k*side;p=[p[0]+Math.cos(r)*off,p[1]-Math.sin(r)*off];last={p:pointAt(an.pts,an.cum,Math.min(an.raw,c.m/f)).p,side};
+    const n=String(i+1);const m=el('g',{'data-tip':`<b>${n}. ${esc(c.title)}</b>${esc(fmtM(c.m))}${c.kind==='finish'?'':' · '+esc(fmtM(c.togo))+' to go'}${c.text?'<br><span>'+esc(c.text.length>150?c.text.slice(0,147)+'…':c.text)+'</span>':''}`,style:'cursor:help'},g);
+    el('circle',{cx:p[0],cy:-p[1],r:(n.length>1?9:8)*k,fill:'var(--ink)',stroke:'var(--panel)','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},m);
+    const t=el('text',{x:p[0],y:-p[1]+3.4*k,'font-size':(n.length>1?9:10)*k,'font-weight':700,'text-anchor':'middle','font-family':'var(--f-body)',fill:'var(--panel)'},m);t.textContent=n})}
+function setShowHaz(v){S.showHaz=v;LS.set('cp.showHaz',v);$('#zhaz').setAttribute('aria-pressed',v);drawHazards();if(S.tab==='preview')renderPreview()}
+function setShowCalls(v){S.showCalls=v;LS.set('cp.showCalls',v);$('#zcall').setAttribute('aria-pressed',v);drawCallNums();drawLegend();if(S.tab==='calls')renderCalls()}
+function drawHazards(){const g=$('#hazards');if(!g)return;g.innerHTML='';if(!S.showHaz){drawLegend();return}const k=mpp();const an=currentAnalysis();const f=an.len/an.raw;
   for(const h of hazards()){if(h.kind==='narrow'||h.kind==='shore'){const pts=[];for(let m=h.m;m<=h.m1+1;m+=8){pts.push(pointAt(an.pts,an.cum,m/f).p)}if(pts.length>1)el('path',{d:pathD(pts),fill:'none',stroke:'#d8322a','stroke-width':h.kind==='narrow'?9:6,opacity:.35,'stroke-linecap':'round','vector-effect':'non-scaling-stroke'},g)}}
-  for(const u of HAZ_USER){const x=u.x,y=-u.y,sz=8*k;el('path',{d:`M${x},${y-sz}L${x+sz},${y+sz*.75}L${x-sz},${y+sz*.75}Z`,fill:'#d8322a',stroke:'#fff','stroke-width':1.4,'vector-effect':'non-scaling-stroke'},g);
+  // a marker for each hazard on the active line; hover (or tap) for what it is
+  for(const h of hazards()){if(h.kind==='user')continue;const [x,y]=h.p,r=7*k;const m=el('g',{'data-tip':`<b>⚠ ${esc(h.title)}</b>${esc(fmtM(h.m))} from the start<br><span>${esc(h.text)}</span>`,style:'cursor:help'},g);
+    el('circle',{cx:x,cy:-y,r,fill:'#fff',stroke:'#d8322a','stroke-width':2,'vector-effect':'non-scaling-stroke'},m);el('path',{d:`M${x},${-y-r*.55}V${-y+r*.15}`,stroke:'#d8322a','stroke-width':2.2,'vector-effect':'non-scaling-stroke'},m);el('circle',{cx:x,cy:-y+r*.5,r:r*.16,fill:'#d8322a'},m)}
+  for(const u of HAZ_USER){const x=u.x,y=-u.y,sz=8*k;el('path',{d:`M${x},${y-sz}L${x+sz},${y+sz*.75}L${x-sz},${y+sz*.75}Z`,fill:'#d8322a',stroke:'#fff','stroke-width':1.4,'vector-effect':'non-scaling-stroke','data-tip':`<b>⚠ ${esc(u.name)}</b>${u.note?'<span>'+esc(u.note)+'</span>':'<span>Marked by your team.</span>'}`,style:'cursor:help'},g);
     const e=el('text',{x,y:y+sz*.55,'font-size':9*k,'text-anchor':'middle','font-weight':800,fill:'#fff','font-family':'var(--f-body)'},g);e.textContent='!';
     const t=el('text',{x:x+11*k,y:y+3*k,'font-size':11*k,'font-weight':700,'font-family':'var(--f-body)',fill:'#b3261e','paint-order':'stroke',stroke:'var(--water)','stroke-width':3*k},g);t.textContent=u.name}
   drawLegend();
@@ -1089,15 +1110,17 @@ function renderCalls(){const el=$('#p-calls');if(!el)return;const an=currentAnal
     <div class="noprint row"><label class="inline" for="crpick">Route</label><select id="crpick" style="flex:1;min-width:0"><option value="marked">Marked course</option>${visibleRoutes().map(r=>`<option value="${esc(r.id)}" ${r.id===S.activeRoute?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div>
     <div class="noprint callbar"><button class="btn" id="cprint">Print card</button>
       <label><input type="checkbox" id="copt-moves" ${opt.moves?'checked':''}> Suggested moves</label>
-      <label><input type="checkbox" id="copt-marks" ${opt.marks?'checked':''}> Kilometre marks</label></div>
-    <ol class="calls">${cs.map(c=>`<li class="call k-${c.kind}"><div class="cw"><b>${fmtM(c.m)}</b><span>${c.kind==='finish'?'':fmtM(c.togo)+' to go'}</span><span>${fmtTime(c.t)} · st ${c.st}</span></div><div class="ct"><span class="ci" aria-hidden="true">${CALLICON[c.kind]}</span><b>${esc(c.title)}</b>${c.text?`<br><span>${esc(c.text)}</span>`:''}${c.kind==='custom'?` <button class="lnk noprint" data-cdel="${CALLS_USER.findIndex(u=>u.text.slice(0,60)===c.title&&Math.abs(+u.m-c.m)<1)}">Remove</button>`:''}</div></li>`).join('')}</ol>
+      <label><input type="checkbox" id="copt-marks" ${opt.marks?'checked':''}> Kilometre marks</label>
+      <label><input type="checkbox" id="copt-map" ${S.showCalls?'checked':''}> Show call numbers on the map</label></div>
+    <ol class="calls">${cs.map((c,ci)=>`<li class="call k-${c.kind}"><div class="cw"><b>${fmtM(c.m)}</b><span>${c.kind==='finish'?'':fmtM(c.togo)+' to go'}</span><span>${fmtTime(c.t)} · st ${c.st}</span></div><div class="ct"><span class="cn">${ci+1}</span><span class="ci" aria-hidden="true">${CALLICON[c.kind]}</span><b>${esc(c.title)}</b>${c.text?`<br><span>${esc(c.text)}</span>`:''}${c.kind==='custom'?` <button class="lnk noprint" data-cdel="${CALLS_USER.findIndex(u=>u.text.slice(0,60)===c.title&&Math.abs(+u.m-c.m)<1)}">Remove</button>`:''}</div></li>`).join('')}</ol>
     <div class="noprint addcall"><h2>Add your own call</h2><p class="sub" style="margin:0">For a move, a focus cue or a crew-specific call. Saved ${S.db?'for everyone on this course':'on this device'}.</p>
       <div class="row"><label>At <input type="number" id="cam" min="0" max="${Math.round(an.len)}" step="50" value="${Math.round(an.len/4/50)*50}" style="width:90px"> m</label>
       <input type="text" id="ctext" maxlength="60" placeholder="e.g. Power 20 for the seniors" style="flex:1;min-width:160px"><button class="btn" id="cadd">Add</button></div></div>`;
   $('#cprint').onclick=()=>window.print();
   $('#crpick').onchange=e=>{S.activeRoute=e.target.value;S.pos=0;S.leg=-1;S.playing=false;refresh()};
-  $('#copt-moves').onchange=e=>{LS.set('cp.callopt',{...opt,moves:e.target.checked});renderCalls()};
-  $('#copt-marks').onchange=e=>{LS.set('cp.callopt',{...opt,marks:e.target.checked});renderCalls()};
+  $('#copt-moves').onchange=e=>{LS.set('cp.callopt',{...opt,moves:e.target.checked});renderCalls();drawCallNums()};
+  $('#copt-marks').onchange=e=>{LS.set('cp.callopt',{...opt,marks:e.target.checked});renderCalls();drawCallNums()};
+  $('#copt-map').onchange=e=>setShowCalls(e.target.checked);
   $('#cadd').onclick=()=>{const m=+$('#cam').value,t=$('#ctext').value.trim();if(!t||!isFinite(m)||m<0||m>an.len)return;saveUserCalls([...CALLS_USER,{m,text:t}])};
   el.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{const i=+b.dataset.cdel;if(i>=0)saveUserCalls(CALLS_USER.filter((_,j)=>j!==i))})}
 function loadUserCalls(){CALLS_USER=LS.get(RK('cp.calls.'+S.course),[]);if(S.db){if(S._callsUnsub)S._callsUnsub();try{S._callsUnsub=S.db.doc('calls/'+callKey()).onSnapshot(d=>{const v=d.exists?d.data():null;CALLS_USER=(v&&Array.isArray(v.list)?v.list:[]).filter(u=>u&&typeof u.text==='string').slice(0,80);if(S.tab==='calls')renderCalls()},()=>{})}catch(e){}}}
@@ -1395,6 +1418,15 @@ document.querySelectorAll('#lseg button').forEach(b=>b.onclick=()=>setLayout(b.d
   dv.addEventListener('dblclick',()=>{LS.set('cp.split.'+app.dataset.layout,null);applySplit(app.dataset.layout)}) }
 $('#regname').textContent=D.name+' · '+D.date;drawLegend();$('#reg').value=REG;
 $('#reg').onchange=e=>{LS.set('cp.reg',e.target.value);location.reload()};
+$('#zhaz').setAttribute('aria-pressed',S.showHaz);$('#zcall').setAttribute('aria-pressed',S.showCalls);
+$('#zhaz').onclick=()=>setShowHaz(!S.showHaz);$('#zcall').onclick=()=>setShowCalls(!S.showCalls);
+// hover a hazard or call number on the map for its details; on a touch screen a tap shows it for a few seconds
+{const tip=$('#maptip'),wrap=$('#mapwrap');let hideT=0;
+  const show=(t,e)=>{clearTimeout(hideT);tip.innerHTML=t.dataset.tip;tip.hidden=false;const r=wrap.getBoundingClientRect();const w=tip.offsetWidth,h=tip.offsetHeight;
+    let x=e.clientX-r.left+14,y=e.clientY-r.top+14;if(x+w>r.width-8)x=e.clientX-r.left-w-14;if(y+h>r.height-8)y=e.clientY-r.top-h-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=Math.max(8,y)+'px'};
+  const svgEl=$('#map');svgEl.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');if(t)show(t,e);else if(e.pointerType==='mouse')tip.hidden=true});
+  svgEl.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')tip.hidden=true});
+  svgEl.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');if(t&&e.pointerType!=='mouse'){show(t,e);hideT=setTimeout(()=>tip.hidden=true,4000)}})}
 document.querySelectorAll('#vseg button').forEach(b=>b.onclick=()=>setView(b.dataset.v));setView(LS.get('cp.view','race')==='practice'?'practice':'race');
 function setCourse(k){if(S.editing&&S.editing.course!==k)S.editing=null;S.course=k;LS.set(RK('cp.course'),k);S.activeRoute='marked';S.pos=0;S.leg=-1;S.playing=false;for(const b of document.querySelectorAll('#cseg button'))b.setAttribute('aria-pressed',b.dataset.c===k);drawLegend();fitCourse();loadUserCalls();refresh()}
 $('#cseg').onclick=e=>{const k=e.target.dataset&&e.target.dataset.c;if(k)setCourse(k)};
