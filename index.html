@@ -374,6 +374,7 @@ const SMOOTH = {"al":{"5K":{"pts":[[1058.3,911.1],[1056.3,910.8],[1054.4,910.5],
 const FALLBACKS = {al:{"raw": "TAF KTCM 182100Z 1821/2003 02008KT 9999 FEW200 QNH2998INS\n  BECMG 1902/1903 02005KT 9999 BKN200 QNH2993INS\n  BECMG 1909/1910 VRB05KT 9999 SCT060 OVC160 QNH2993INS\n  BECMG 1922/1923 36006KT 9999 FEW030 BKN120 QNH2996INS TX17/1823Z TN06/1913Z", "fetchedAt": "2026-10-20T03:08:00Z"}, hotl:{"raw": "TAF KBFI 310308Z 3103/3124 VRB03KT P6SM -SHRA BKN035 OVC050\n  FM310500 VRB03KT P6SM FEW012 SCT035 BKN060\n  FM311000 VRB03KT 5SM BR BKN010\n  FM311700 VRB03KT 6SM BR SCT012 BKN025\n  FM312000 33005KT P6SM SCT050", "fetchedAt": "2026-10-31T04:53:00Z"}};
 // race-day NWS outlook baked in at build time, so the page has it even without the shared database (e.g. on GitHub Pages)
 const FALLBACK_NWS = {hotl:{"date": "2026-11-01", "fetchedAt": "2026-10-31T04:53:00Z", "source": "forecast.weather.gov (NWS hourly, 47.6475,-122.3045)", "hours": [{"h": 6, "kt": 1, "dir": "ENE"}, {"h": 7, "kt": 1, "dir": "ENE"}, {"h": 8, "kt": 1, "dir": "S"}, {"h": 9, "kt": 1, "dir": "S"}, {"h": 10, "kt": 1, "dir": "S"}, {"h": 11, "kt": 2, "dir": "SSW"}, {"h": 12, "kt": 2, "dir": "SSW"}, {"h": 13, "kt": 2, "dir": "SSW"}, {"h": 14, "kt": 2, "dir": "SSW"}, {"h": 15, "kt": 2, "dir": "SSW"}, {"h": 16, "kt": 2, "dir": "SSW"}, {"h": 17, "kt": 1, "dir": "S"}, {"h": 18, "kt": 1, "dir": "S"}]}};
+const FALLBACK_EVENTS = {hotl:[{"name": "7 · Mens Jr 8+ Cup", "time": "2026-11-01T08:25:00-08:00"}, {"name": "9 · Boys U-17 8+", "time": "2026-11-01T08:41:00-08:00"}, {"name": "10 · Girls U-17 8+", "time": "2026-11-01T08:44:00-08:00"}, {"name": "34 · Girls U-17 4x Coxed", "time": "2026-11-01T11:32:00-08:00"}, {"name": "38 · Mens Jr 4+ Cup", "time": "2026-11-01T12:03:00-08:00"}, {"name": "39 · Womens Jr 4+ Cup", "time": "2026-11-01T12:10:00-08:00"}]};
 const $ = s => document.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
 const LS = {get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -497,7 +498,7 @@ function windOnLegs(an,w){
 const COLORS=['--mine','--mine2','--mine3'];
 let LP=LS.get('cp.legpace',{});
 const S={course:D.courses[LS.get(RK('cp.course'),'')]?LS.get(RK('cp.course'),''):CKEYS[0],tab:'preview',leg:-1,pos:0,playing:false,rate:30,showWarm:LS.get('cp.warm',false),
-  routes:[],activeRoute:'marked',editing:null,selPt:-1,taf:FALLBACK_TAF,tafLocal:null,nws:FALLBACK_NWS[REG]||null,hourIdx:-1,startT:LS.get(RK('cp.start'),null),events:[],eventKey:LS.get(RK('cp.event'),''),db:null,dbState:'connecting'};
+  routes:[],activeRoute:'marked',editing:null,selPt:-1,taf:FALLBACK_TAF,tafLocal:null,nws:FALLBACK_NWS[REG]||null,hourIdx:-1,startT:LS.get(RK('cp.start'),null),events:FALLBACK_EVENTS[REG]||[],eventKey:LS.get(RK('cp.event'),''),db:null,dbState:'connecting'};
 
 /* ---------- map view ---------- */
 const svg=$('#map'), wrap=$('#mapwrap');
@@ -845,8 +846,9 @@ function renderPreview(){
     <div class="stat"><span class="lab">Race day</span><span style="font-weight:600;font-size:18px">${esc(D.date.replace(/, \d{4}$/,''))}</span></div></div>
   </div>
   <div class="row"><label class="inline" for="rstart">Race start</label>${(()=>{baseHour();const rh=raceHours();const ce=curEvent();const onH=!ce&&rh.some(o=>o.i===S.hourIdx);
-    if(!S.events.length&&!rh.length)return`<span class="sub">The forecast doesn't reach race day yet. It covers about a day ahead.</span>`;
-    return`<select id="rstart" style="flex:1;min-width:0">${!ce&&!onH?'<option value="" selected>Pick a start…</option>':''}${S.events.length?`<optgroup label="Events">${S.events.map(e=>`<option value="e:${esc(evKey(e))}" ${ce&&evKey(e)===evKey(ce)?'selected':''}>${esc(e.name)} · ${fmtEvT(new Date(e.time))}</option>`).join('')}</optgroup>`:''}${rh.length?`<optgroup label="Race day hours">${rh.map(o=>`<option value="h:${o.i}" ${!ce&&o.i===S.hourIdx?'selected':''}>${fmtHour(o.h.t)}</option>`).join('')}</optgroup>`:''}</select>`})()}</div>${curEvent()?`<div class="sub">${eventNote()}</div>`:''}
+    // Race start lists the regatta's events only (Audrey); hour by hour weather lives in the Weather tab
+    if(!S.events.length)return`<span class="sub">No events loaded for this regatta yet. Pick an hour in the Weather tab.</span>`;
+    return`<select id="rstart" style="flex:1;min-width:0">${!ce?'<option value="" selected>Pick your event…</option>':''}${S.events.length?`<optgroup label="Events">${S.events.map(e=>`<option value="e:${esc(evKey(e))}" ${ce&&evKey(e)===evKey(ce)?'selected':''}>${esc(e.name)} · ${fmtEvT(new Date(e.time))}</option>`).join('')}</optgroup>`:''}</select>`})()}</div>${curEvent()?`<div class="sub">${eventNote()}</div>`:''}
   <div class="row"><label class="inline" for="rpick">Route</label><select id="rpick" style="flex:1;min-width:0"><option value="marked">Marked course</option>${visibleRoutes().map(r=>`<option value="${esc(r.id)}" ${r.id===S.activeRoute?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div>
   <div class="sub">Times use your split of ${$('#pace').value} /500m and rate ${rateSpm()}${hasLegPace()?', changed on some legs below':''}. Set a split or rate on any leg to change that leg only.</div>
   <div class="player">
