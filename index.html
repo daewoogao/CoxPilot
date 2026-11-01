@@ -389,8 +389,20 @@ Object.assign(REGS.al,{name:'American Lake Fall Classic',date:'Sat, Oct 3, 2026'
 REGS.hotl.note='Traced from the official Head of the Lake course map (north-up, scaled from its scale bar) and stretched slightly so the marked course measures {len} m. Orange race buoys are drawn where the map shows them; yellow buoys stay on your starboard through the Pocock turn. Not yet checked against satellite imagery.';
 REGS.al.raceDay='2026-10-03';
 REGS.al.legend=[['c5k','5K Race Course'],['c3k','3K Race Course'],['chute','Start Chute'],['guide','Guide Buoy'],['sf','Start/Finish Buoy'],['turn','Turn Buoy'],['marshal','Safety Marshall']];REGS.hotl.guideTerm='Orange race buoys';REGS.hotl.raceDay='2026-11-01';Object.assign(REGS.hotl.wx,{lat:47.6475,lon:-122.3045});
-// Head of the Lake opens first (Audrey, 2026-10-31); a viewer's own pick is remembered
-const REG=REGS[LS.get('cp.reg','hotl')]?LS.get('cp.reg','hotl'):'hotl';
+// Practice water: a plain lake of its own for the 3D drills, not tied to any regatta (Audrey, 2026-11-01).
+// The overtake lane runs 1,100 m east, then a 45° turn to port, so a cox can set up on the inside before passing.
+REGS.prac={name:'Practice lake',place:'Practice',date:'Any day',title:'CoxPilot Practice',scale:1,origin:{lat:47.6475,lon:-122.3045},
+  shore:[[-1350,-300],[-600,-310],[200,-300],[620,-200],[1000,120],[1280,480],[1300,1100],[700,1120],[380,820],[-80,330],[-500,300],[-1000,310],[-1350,300],[-1450,0]],
+  islands:[],park:null,courses:{Overtake:{official:2100,line:[[-1000,0],[100,0],[807.1,707.1]],turns:[[95,38]],names:['Practice turn']}},
+  start:[[-1000,30],[-1000,-30]],finish:[[785.9,728.3],[828.3,685.9]],guide:[],yellow:[],chute:null,marshal:[],shallow:[],warmup:null,
+  labels:[['Boathouse',-1300,330,'shore'],['Red barn',-450,-330,'shore'],['Water tower',380,-290,'shore'],['Tall pines',-180,370,'shore'],['Point',1120,230,'shore']],
+  docks:null,north:{rot:0},sat:null,rainier:140,wx:{id:'KBFI',name:'Boeing Field',doc:'kbfi',lat:47.6475,lon:-122.3045},channel:[],takeout:[],pencil:[],
+  boathouses:[['Club',-1250,335]],bridges:[],legend:[['lane','Practice lane']],turnStyle:'buoy',guideTerm:'Buoys',
+  note:'A practice lake made up for the drills, not a real regatta course.'};
+FALLBACKS.prac=FALLBACKS.hotl;
+// Head of the Lake opens first (Audrey, 2026-10-31); a viewer's own pick is remembered. The Practice page always uses the practice lake.
+const PRACTICE=LS.get('cp.view','race')==='practice';
+const REG=PRACTICE?'prac':REGS[LS.get('cp.reg','hotl')]&&LS.get('cp.reg','hotl')!=='prac'?LS.get('cp.reg','hotl'):'hotl';
 const D=REGS[REG];const FALLBACK_TAF=FALLBACKS[REG];
 const RK=k=>k+'.'+REG; // per-regatta storage keys
 document.title=D.title;
@@ -1308,7 +1320,7 @@ const QUIZ=[
 const PSRC=[['Head of the Lake rules and regulations','https://www.headofthelake.org/rules-regulations'],['row2k: A note on yield-ing','https://www.row2k.com/features/5939/a-note-on-yield-ing/'],['RowSource: Head of the Charles top 5 coxing tips','https://www.rowsource.com/cox/hocr-top-5-coxing-tips'],['British Rowing: Phelan Hill on improving your coxing','https://www.britishrowing.org/2018/11/how-can-you-improve-your-coxing-skills-olympic-cox-phelan-hill-provides-tips/'],['Ready All Row: coxing how-to, racing','https://readyallrow.org/?p=8048'],['OURCs coxing competencies','https://ourcs.co.uk/coxing/coxing-competencies/']];
 function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const done=LS.get('cp.skilldone',{}),last=LS.get('cp.drilllast',{});const qs=QUIZ;const qa=S.quiz||(S.quiz={});
   el.innerHTML=`<h2>Practice</h2><p class="lead">The race skills every cox needs, for any regatta. Read each one, row the drills in 3D, and tick it once you have practised it.</p>
-  <div class="pwater"><label for="pwater">3D drills row on</label><select id="pwater" class="regsel"><option value="al">American Lake</option><option value="hotl">Lake Washington, Seattle</option></select><span class="sub">${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills practised</span></div>
+  <div class="pwater"><span class="sub">The 3D drills row on a practice lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills practised.</span></div>
   <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Practised</label></div>
     <p>${esc(k.why)}</p><ul>${k.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>
     ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}
@@ -1317,18 +1329,17 @@ function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const
   <h2 id="pquiz">Rules quiz</h2><div class="qzs">${qs.map((q,i)=>{const a=qa[i];return`<div class="qz"><p><b>${i+1}.</b> ${esc(q.q)}</p><div class="qos">${q.o.map((o,j)=>`<button class="btn qo${a!=null?(j===q.a?' right':j===a?' wrong':''):''}" data-q="${i}" data-o="${j}"${a!=null?' disabled':''}>${esc(o)}</button>`).join('')}</div>${a!=null?`<p class="sub">${a===q.a?'✓ Right.':'✗ Not quite.'} ${esc(q.why)}</p>`:''}</div>`}).join('')}
   <p class="sub">${Object.keys(qa).length} of ${qs.length} answered, ${qs.filter((q,i)=>qa[i]===q.a).length} right. <button class="lnk" id="qreset">Start again</button></p></div>
   <h2>Where this comes from</h2><ul class="sub psrc">${PSRC.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul>`;
-  $('#pwater').value=REG;$('#pwater').onchange=e=>{LS.set('cp.reg',e.target.value);location.reload()};
   el.querySelectorAll('[data-skd]').forEach(c=>c.onchange=()=>{const d=LS.get('cp.skilldone',{});if(c.checked)d[c.dataset.skd]=1;else delete d[c.dataset.skd];LS.set('cp.skilldone',d);keepScroll(renderPractice)});
   el.querySelectorAll('[data-drill]').forEach(b=>b.onclick=()=>startPractice({drill:b.dataset.drill}));
   el.querySelectorAll('[data-pturn]').forEach(b=>b.onclick=()=>startPractice({from:0}));
   el.querySelectorAll('[data-pcourse]').forEach(b=>b.onclick=()=>startPractice({from:-1}));
-  el.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{const k=b.dataset.ptab;setView('race');setTab(k);if(k==='calls')renderCalls();else renderReplay()});
+  el.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{LS.set('cp.tab',b.dataset.ptab);setView('race')});
   el.querySelectorAll('[data-pquiz]').forEach(b=>b.onclick=()=>$('#pquiz').scrollIntoView({behavior:'smooth'}));
   el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qa[+b.dataset.q]=+b.dataset.o;keepScroll(renderPractice)});
   $('#qreset').onclick=()=>{S.quiz={};renderPractice();$('#pquiz').scrollIntoView()}}
 function keepScroll(fn){const el=$('#practice'),a=el.scrollTop,w=scrollY;fn();el.scrollTop=a;scrollTo(0,w)}
 // Practice is its own page, apart from any regatta (Audrey): the header switches between it and Race
-function setView(v){const app=document.querySelector('.app');app.dataset.view=v;$('#practice').hidden=v!=='practice';LS.set('cp.view',v);
+function setView(v){if((v==='practice')!==PRACTICE){LS.set('cp.view',v);location.reload();return}const app=document.querySelector('.app');app.dataset.view=v;$('#practice').hidden=v!=='practice';LS.set('cp.view',v);
   for(const b of document.querySelectorAll('#vseg button'))b.setAttribute('aria-pressed',b.dataset.v===v);
   $('#regname').textContent=v==='practice'?'Practice · skills for any race':D.name+' · '+D.date;
   if(v==='practice')renderPractice();else setTimeout(()=>{if(typeof setVB==='function')setVB()},60)}
@@ -1682,7 +1693,7 @@ function buildCourse3(){
 }
 
 /* wind at a moment of the row (seconds from the planned start); VRB wanders, gusts pulse */
-function wind3(t){if(V3.drill==='wind'&&V3.dw&&V3.mode==='steer')return V3.dw;const T=taf();if(!T||T.error||!T.hours.length)return{dir:0,spd:0,label:'Calm'};baseHour();
+function wind3(t){if(V3.drill==='wind'&&V3.dw&&V3.mode==='steer')return V3.dw;if(REG==='prac')return{dir:0,spd:0,label:'Calm (practice lake)'};const T=taf();if(!T||T.error||!T.hours.length)return{dir:0,spd:0,label:'Calm'};baseHour();
   const h=T.hours[Math.min(T.hours.length-1,Math.max(0,S.hourIdx)+Math.floor(t/3600))];const w=h&&h.wind;if(!w||!w.spd)return{dir:0,spd:0,label:'Calm',sky:h&&h.sky};
   const g=w.gust?Math.max(0,Math.sin(t/7)*Math.sin(t/3.1))*(w.gust-w.spd):0;
   let dir=w.dir;if(dir==='VRB'||dir==null){const base=T.hours.find(x=>x.wind&&typeof x.wind.dir==='number');dir=((base?base.wind.dir:0)+70*Math.sin(t/41)+35*Math.sin(t/13)+360)%360}
