@@ -66,7 +66,7 @@ ol.calls{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
 .skh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.skill h3{margin:0;font-size:16px}.skd{font-size:13px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
 .skill p{margin:6px 0;font-size:14px;line-height:1.4}.skill ul{margin:4px 0 8px;padding-left:20px;font-size:14px;line-height:1.4}.skill li{margin:3px 0}
 .pplan{margin:10px 0;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}.pplan h4{margin:0 0 6px;font-size:15px}.pplan svg{width:100%;height:auto;display:block}
-.skill.wide{grid-column:1/-1}.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:10px 0}.tcard{border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}.tcard h4{margin:0;font-size:15px}.tcard p{margin:0;font-size:13px}.tcard svg{width:100%;height:auto;background:#a9cbe6;border-radius:8px}.tcard .row{margin-top:auto}
+.skill.wide{grid-column:1/-1}.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:10px 0}.tcard{border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}.tcard h4{margin:0;font-size:15px}.tcard p{margin:0;font-size:13px}.tcard svg{width:100%;height:auto;background:#a9cbe6;border-radius:8px}.tcard .row{margin-top:auto}.tcalls{font-size:12px;margin:2px 0}.tcalls span{font-size:12px}
 .pcalls{margin:8px 0 4px;padding-left:22px;font-size:13px}.pcalls li{margin:3px 0}.pcalls span{display:block;color:var(--muted)}
 .skc{display:flex;flex-direction:column;gap:4px;margin:6px 0;font-size:13px;font-style:italic;color:var(--muted);border-left:3px solid var(--accent);padding-left:8px}
 .skill .row,.qz .qos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.qz{border-bottom:1px solid var(--rule);padding:8px 0}.qz p{margin:4px 0;font-size:14px}
@@ -703,7 +703,7 @@ function drawScale(){const k=mpp();const target=k*90;const steps=[50,100,200,250
 
 /* ---------- analysis of the active line ---------- */
 function visibleRoutes(){return S.routes.filter(r=>r.course===S.course)}
-function activeLine(){if(S.editing)return S.editing.pts;if(S.activeRoute!=='marked'){const r=S.routes.find(r=>r.id===S.activeRoute&&r.course===S.course);if(r)return r.pts}return COURSES[S.course].line}
+function activeLine(){if(S.editing)return S.editing.pts;if(S.activeRoute!=='marked'){const r=S.routes.find(r=>r.id===S.activeRoute&&r.course===S.course);if(r)return r.pts;const sm=(SMOOTH[REG]||{})[S.course];if(sm&&S.activeRoute==='smooth-'+S.course)return sm.pts}return COURSES[S.course].line}
 let _an=null,_anKey='';
 function lineKey(pts){let h=0;for(let i=0;i<pts.length;i++)h=(h*31+pts[i][0]*7+pts[i][1]*13)%1e9;return pts.length+':'+h.toFixed(2)}
 function currentAnalysis(){const pts=activeLine();const key=S.course+lineKey(pts);if(key!==_anKey){_an=analyze(pts,S.course);_anKey=key}return _an}
@@ -1110,25 +1110,30 @@ function sideOf(an,P){const pr=project(an.pts,an.cum,P);const cr=pr.dir[0]*(P[1]
 const hdg=b=>String(Math.round(b)%360).padStart(3,'0')+'°';
 let CALLS_USER=[];
 const callKey=()=>REG+'_'+S.course;
-function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,title,text,say)=>{const s=Math.max(0,Math.min(L,m/f));out.push({s,kind,title,text,say:say||title})};
+function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,title,text,say)=>{const s=Math.max(0,Math.min(L,m/f));out.push({s,kind,title,text,say:say||title})};const SL=s=>{const li=legIdxAt(an,s/f);return legSpeed(li)*60/legRate(li)};
   const opt=REG==='prac'?{marks:false,moves:false}:LS.get('cp.callopt',{marks:true,moves:true});const l0=an.legs[0];
-  add(0,'start','Start',`Rolling start: be at full race pace before the line. Heading ${hdg(l0.bearing)}. Point: ${pointOfAim(an,l0)}.`,'Start. Full pressure, hold your point');
+  if(REG!=='prac')add(0,'start','Start',`Rolling start: be at full race pace before the line. Heading ${hdg(l0.bearing)}. Point: ${pointOfAim(an,l0)}.`,'Start. Full pressure, hold your point');
   // landmarks and bridges as you come level with them
-  for(const lab of D.labels){if(lab[3]==='water'||lab[3]==='hazard')continue;const o=sideOf(an,[lab[1],lab[2]]);
+  for(const lab of REG==='prac'?[]:D.labels){if(lab[3]==='water'||lab[3]==='hazard')continue;const o=sideOf(an,[lab[1],lab[2]]);
     if(o.d>600||o.s<60/f||o.s>L-60/f)continue;add(o.s*f,'land',`${lab[0]} on your ${o.side}`,`${lab[0]} is level on your ${o.side} side.`,`${lab[0]} on your ${o.side}`)}
   for(const b of (D.bridges||[]).filter(x=>!x.fwy)){let best=null;for(const sg of b.segs)for(let k=1;k<sg.length;k++)for(let u=0;u<=1;u+=.05){const P=[sg[k-1][0]+(sg[k][0]-sg[k-1][0])*u,sg[k-1][1]+(sg[k][1]-sg[k-1][1])*u];const o=sideOf(an,P);if(o.d<25&&(!best||o.d<best.d))best=o}
     if(!best)continue;const n=b.name.replace(/ Ship Canal/,'').replace(/ Bridge$/,'');
-    add(best.s*f-150,'bridge',`${n} Bridge in 150 m`,`Line up for the centre span now and hold it straight. No big rudder under the bridge.`,`${n} bridge in one fifty. Line up the centre span`);
+    add(best.s*f-15*SL(best.s*f),'bridge',`${n} Bridge in 15`,`Fifteen strokes out. Line up the racing arch now and hold it straight. No big rudder under the bridge.`,`${n} bridge in fifteen. Line up the arch`);
     add(best.s*f,'bridge',`Under ${n} Bridge`,'Hold the line through the span, then find your next point.',`Under ${n}. Hold it`)}
-  // turns
+  // turns, called the way a top cox does it on the water: in strokes and boat lengths, by the buoy, never in metres
   const preOf=(t,li)=>t.arc?Math.max(0,t.arc.pre*f):Math.max(2,Math.round(t.angle/25))*legSpeed(li)*60/legRate(li);
   const postOf=t=>t.arc?Math.max(30,t.arc.post*f):60;
-  an.turns.forEach((t,i)=>{const li=i,nx=an.legs[i+1];const m=t.s*f;const pre=preOf(t,li);
-    const prev=an.turns[i-1],nxt=an.turns[i+1];const close=prev&&m-250<prev.s*f+postOf(prev);const nextClose=nxt&&nxt.s*f-250<m+postOf(t);
-    if(!close)add(m-250,'turn',`${t.name} in 250 m`,`${t.angle>=70?'Big turn':t.angle>=30?'Turn':'Slight bend'} to ${t.dir} coming, ${Math.round(t.angle)}°. Buoy on your ${t.side}. Warn the crew.`,`${t.name} in two fifty. Turn to ${t.dir} coming`);
-    add(m-pre,'turn',`Start the turn: ${t.dir}`,t.arc?`Ease the rudder on now, build to a steady ${Math.round(t.arc.r)} m arc. Pressure up on ${t.dir==='port'?'starboard':'port'}.`:`Rudder on now, pressure up on ${t.dir==='port'?'starboard':'port'}, ease ${t.dir}.`,`Turning ${t.dir} now. Pressure ${t.dir==='port'?'starboard':'port'}`);
-    if(nx&&nextClose){add(m+postOf(t),'turn',`Out of ${t.name}, straight into ${nxt.name}`,`${nxt.name} next, buoy on your ${nxt.side}. Keep the boat set.`,`Next buoy, ${nxt.name}`)}
-    else if(nx){const post=postOf(t);add(m+post,'turn',`Out of ${t.name}`,`Rudder off. New heading ${hdg(nx.bearing)}. Point: ${pointOfAim(an,nx)}.`,`Out of the turn. Rudder off. New point`);
+  const WN=['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
+  an.turns.forEach((t,i)=>{const li=i,nx=an.legs[i+1];const m=t.s*f;const pre=preOf(t,li);const sl=legSpeed(li)*60/legRate(li);
+    const prev=an.turns[i-1],nxt=an.turns[i+1];const close=prev&&m-pre-20*sl<prev.s*f+postOf(prev);const nextClose=nxt&&nxt.s*f-preOf(nxt,li+1)-20*sl<m+postOf(t);
+    const out=t.dir==='port'?'starboard':'port',Dir=t.dir==='port'?'Port':'Starboard',kind=t.angle<35?'bend':'turn',m0=m-pre;
+    const lens=n=>Math.max(1,Math.round((pre+n*sl)/17.5));const TN=REG==='prac'?`${Dir} ${kind}`:`${t.name} (${t.dir})`;
+    if(!close&&m0-20*sl>30)add(m0-20*sl,'turn',`${TN} in 20`,`Buoy on our ${t.side}, about ${lens(20)} boat lengths ahead (${t.name}). Tell the crew what is coming: ${Math.round(t.angle)}°${t.angle>=100?', a tight one':''}.`,`${Dir} ${kind} in twenty. Buoy on our ${t.side}`);
+    if(m0-5*sl>(prev?prev.s*f+postOf(prev)+10:30))add(m0-5*sl,'turn',`${TN} in 5`,`Count it down so the crew is ready: “In 5… 4… 3… 2… 1”. The buoy is about ${lens(5)} lengths ahead.`,`${Dir} ${kind} in five. Sit up, ready`);
+    add(m0,'turn',kind==='bend'?`Easing into the bend`:`Turning now, more ${out}!`,kind==='bend'?'Small rudder, held steady through the bend. Keep the pressure even.':`Ease the rudder on and build a steady arc. ${out[0].toUpperCase()+out.slice(1)} side pulls harder to help the boat round.`,kind==='bend'?'Easing into the bend. Stay long':`Turning now. More ${out}. Stay long`);
+    if(t.angle>=60)add(m,'turn',`Buoy on our ${t.side} hip`,'Level with the buoy. Hold the arc, keep the boat set, stay long.',`Buoy on our ${t.side}. Hold it`);
+    if(nxt&&nextClose){const d2=nxt.dir==='port'?'Port':'Starboard';add(m+postOf(t),'turn',`Out of it, straight into the ${nxt.dir} ${nxt.angle<35?'bend':'turn'}`,`Don’t let the rudder fully off. Buoy on our ${nxt.side} next: switch the pressure to ${nxt.dir==='port'?'starboard':'port'}.`,`Out of it. ${d2} next, buoy on our ${nxt.side}`)}
+    else if(nx){const post=postOf(t);add(m+post,'turn',`Rudder off, even pressure`,REG==='prac'?`Straighten up on the new line, heading ${hdg(nx.bearing)}. Settle the crew back to even pressure.`:`Straighten up. New point: ${pointOfAim(an,nx)}. Heading ${hdg(nx.bearing)}.`,`Rudder off. Even pressure. New point`);
       if(opt.moves&&nx.dist>500&&!nextClose)add(m+post+20,'move','Power 10 out of the turn','Ten strokes to get the speed back after the turn.','Power ten, now')}});
   const moveAt=m=>opt.moves&&(Math.abs(m-an.len/2)<40||(an.len>2500&&Math.abs(m-(an.len-1000))<40));
   if(opt.marks)for(let m=1000;m<an.len-600;m+=1000)if(!moveAt(m))add(m,'mark',`${(m/1000)} km gone`,`${fmtM(an.len-m)} to go.`,`${fmtM(an.len-m).replace(' m','')} to go`);
@@ -1136,12 +1141,12 @@ function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,
     if(an.len>2500)add(an.len-1000,'move','1,000 to go: start the build','Lengthen and lift the pressure; rate up 1 every 250 m.','One thousand to go. Start the build');
     add(an.len-500,'move','500 to go: sprint','Rate up 2. Everything from here.','Five hundred to go. Up two, sprint');
     add(an.len-250,'move','250 to go','Up 2 more. Empty the tank.','Two fifty. Up two more. Everything')}
-  for(const h of hazards()){const warn=h.kind==='narrow'?150:100;
-    if(h.m>warn+20)add(h.m-warn,'hazard',`${h.title} in ${warn} m`,h.text,`${h.say} in ${warn===150?'one fifty':'one hundred'}`);
+  for(const h of hazards()){const n=h.kind==='narrow'?15:10,warn=n*SL(h.m);
+    if(h.m>warn+20)add(h.m-warn,'hazard',`${h.title} in ${n}`,h.text,`${h.say} in ${n===15?'fifteen':'ten'}`);
     else add(h.m,'hazard',h.title,h.text,h.say);
     if(h.kind==='narrow'&&h.m1-h.m>=60)add(h.m1,'hazard','Water opens up','Through the narrow part. Back to your normal line and steering.','Clear. Water opens up')}
   for(const u of CALLS_USER)if(isFinite(u.m)&&u.text)add(+u.m,'custom',u.text.slice(0,60),u.note||'',u.text);
-  add(an.len,'finish','Finish',`${fmtM(an.len)} · plan ${fmtTime(totalTime(an))}.`,'Finish. Well done');
+  if(REG!=='prac')add(an.len,'finish','Finish',`${fmtM(an.len)} · plan ${fmtTime(totalTime(an))}.`,'Finish. Well done');
   const br=out.filter(c=>c.kind==='bridge');for(let j=out.length-1;j>=0;j--){const c=out[j];if(c.kind==='move'&&c.title.startsWith('Power 10 out')&&br.some(b=>Math.abs(b.s-c.s)*f<160))out.splice(j,1)}
   out.sort((a,b)=>a.s-b.s||(a.kind==='start'?-1:0));
   for(const c of out){c.m=c.s*f;c.togo=an.len-c.m;c.t=elapsed(an,c.s);c.st=strokesAt(an,c.s)}
@@ -1368,8 +1373,10 @@ function turnCards(){const last=LS.get('cp.turnlast',{});return`<div class="tgri
   const s0=C.line[0],s1=C.line[1],d=Math.hypot(s1[0]-s0[0],s1[1]-s0[1]),u=[(s1[0]-s0[0])/d,(s1[1]-s0[1])/d],q=[s0[0]+u[0]*60,s0[1]+u[1]*60];
   const boat=`<g transform="translate(${P(q)}) rotate(${(Math.atan2(u[0],u[1])*180/Math.PI).toFixed(1)}) scale(${sc*1.1})"><path d="M0,-9 L5.5,7 L0,4 L-5.5,7Z" fill="#7b1e34" stroke="#e0b12a" stroke-width="1.6"/></g>`;
   const res=last[k]?`<span class="sub">Last try: ${esc(last[k])}</span>`:'';
-  return`<div class="tcard"><h4>${esc(t.name)}</h4><svg viewBox="${cx-w/2} ${-cy-h/2} ${w} ${h}" role="img" aria-label="${esc(t.name)} plan">${lane}${tl}${by}${boat}</svg><p>${turnTip(t,sm)}</p>${res}<div class="row"><button class="btn" data-pturnw="${k}">▶ Watch it first</button><button class="btn primary" data-pturn="${k}">Steer it in 3D</button></div></div>`}).join('')}</div>
+  const cl=pracCalls(k);return`<div class="tcard"><h4>${esc(t.name)}</h4><svg viewBox="${cx-w/2} ${-cy-h/2} ${w} ${h}" role="img" aria-label="${esc(t.name)} plan">${lane}${tl}${by}${boat}</svg><p>${turnTip(t,sm)}</p><ol class="pcalls tcalls">${cl.map(c=>`<li><b>${esc(c.title)}</b><span>${esc(c.text)}</span></li>`).join('')}</ol>${res}<div class="row"><button class="btn" data-pturnw="${k}">▶ Watch it first</button><button class="btn primary" data-pturn="${k}">Steer it in 3D</button></div></div>`}).join('')}</div>
   <p class="sub">White dashed: the lane. Orange: the turn line to steer, a steady arc about 10 m outside the yellow buoy.</p>`}
+// the calls for one practice turn, worked out on its turn line
+function pracCalls(k){const c0=S.course,r0=S.activeRoute;S.course=k;S.activeRoute='smooth-'+k;let cl=[];try{cl=calls().filter(c=>c.kind!=='start'&&c.kind!=='finish')}finally{S.course=c0;S.activeRoute=r0}return cl}
 function turnTip(t,sm){const a=sm.turns[0],deg=Math.round(a.ang),st=Math.max(1,strokes(a.pre,0));const P=t.pts,cr=(P[1][0]-P[0][0])*(P[2][1]-P[1][1])-(P[1][1]-P[0][1])*(P[2][0]-P[1][0]);const dir=cr>0?'port':'starboard',out=cr>0?'starboard':'port';
   if(t.kind==='bend')return`A slight ${deg}° bend to ${dir}. Hold a small, steady rudder through the whole bend instead of one big late correction, and pick your new point of aim before you start.`;
   if(t.kind==='90')return`A ${deg}° turn to ${dir}, buoy on your ${dir}. Call it early (“Turn in 5”), start easing the rudder on about ${st} strokes before the buoy, ask for more pressure on ${out}, hold a steady ${t.r} m arc, then let the rudder off as the new point comes onto your bow.`;
@@ -1781,11 +1788,14 @@ function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v
   for(const [x,y,nm] of brLab){const t=mk('text',{x,y,'font-size':9*k,'font-weight':700,'font-family':'sans-serif',fill:'#111',stroke:'#fff','stroke-width':2.5*k,'paint-order':'stroke'});t.textContent=nm}
   if(V3.plan&&V3.sim){const pp=passPts(an,V3.sim.s0);V3.miniLeg.style.display='none';mk('path',{d:pathD(pp),fill:'none',stroke:dO?'#f07a2a':rc,'stroke-width':3*k,'stroke-linecap':'round'});
     for(const c of V3.plan.pc){if(c.n<2)continue;const p=passAt(an,V3.sim.s0,c.m);mk('circle',{cx:p[0],cy:-p[1],r:5*k,fill:'#f07a2a',stroke:'#fff','stroke-width':k});const t=mk('text',{x:p[0],y:-p[1]+2.6*k,'font-size':7*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#fff'});t.textContent=c.n}}
+  // numbered calls, the same numbers as the call list; on a race course only the next few show so the map stays clear
+  V3.miniCalls=[];if(!(V3.plan&&V3.sim)){const cl=calls();cl.forEach((c,i)=>{if(c.kind==='start'||c.kind==='finish')return;const p=pointAt(an.pts,an.cum,c.s).p;const g=mk('g',{style:REG==='prac'?'':'display:none'});mk('circle',{cx:p[0],cy:-p[1],r:5.5*k,fill:'#f07a2a',stroke:'#fff','stroke-width':k},g);const t=mk('text',{x:p[0],y:-p[1]+2.7*k,'font-size':7*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#fff'},g);t.textContent=i+1;V3.miniCalls.push({s:c.s,g})})}
   // the other crew: a navy and white boat with its name, so it is easy to tell from yours
   const ag=mk('g',{style:'display:none'});const bs=V3.miniZoom?BOATL/16:k*1.15;const ab=mk('g',{},ag);mk('path',{d:'M0,-9 L5.5,7 L0,4 L-5.5,7Z',fill:'#1f3a68',stroke:'#fff','stroke-width':1.6,'stroke-linejoin':'round'},ab);V3.miniAIb=ab;V3.miniBS=bs;
   const at=mk('text',{'font-size':9*k,'font-weight':700,'font-family':'sans-serif',fill:'#1f3a68',stroke:'#fff','stroke-width':2.5*k,'paint-order':'stroke','text-anchor':'middle'},ag);V3.miniAIt=at;V3.miniAI=ag;
   const b=mk('g',{});mk('path',{d:'M0,-9 L5.5,7 L0,4 L-5.5,7Z',fill:'#7b1e34',stroke:'#e0b12a','stroke-width':1.6,'stroke-linejoin':'round'},b);V3.miniBoat=b}
 function mini3(an,P,li,s){if(!V3.mini||!V3.miniBoat)return;const k=V3.miniK;const bs=V3.miniBS||k*1.15;
+  if(V3.miniCalls&&V3.miniCalls.length){let n=0;for(const c of V3.miniCalls){const on=REG==='prac'||(c.s>=s-5&&n<4);if(on&&REG!=='prac')n++;const d=on?'':'none';if(c.g.style.display!==d)c.g.style.display=d}}
   if(V3.miniAI){const a=V3.sim&&V3.sim.ai;V3.miniAI.style.display=a?'':'none';if(a){const A=aiPose(an,a);const r=A.h*Math.PI/180,c=BOATL/2;const ax=A.x+Math.sin(r)*c,ay=A.y+Math.cos(r)*c; // the icon centred on the hull
       V3.miniAIb.setAttribute('transform',`translate(${ax.toFixed(1)},${(-ay).toFixed(1)}) rotate(${A.h.toFixed(1)}) scale(${bs.toFixed(3)})`);V3.miniAIt.setAttribute('x',ax.toFixed(1));V3.miniAIt.setAttribute('y',(-ay-14*k).toFixed(1));V3.miniAIt.textContent=a.kind==='slow'?'Crew to pass':'Crew behind';
       if(V3.miniZoom&&V3.miniWH){const [w,h]=V3.miniWH;const r0=P.h*Math.PI/180,cx=(P.x+ax)/2+Math.sin(r0)*20,cy=(P.y+ay)/2+Math.cos(r0)*20;$('#v3minisvg').setAttribute('viewBox',`${(cx-w/2).toFixed(1)} ${(-cy-h/2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`)}}}
@@ -1976,10 +1986,10 @@ function hud3(an,P,w){const f=an.len/an.raw,set=(id,v)=>{const e=document.getEle
   else if(done){T='Finish';Sx=`${fmtM(an.len)} in ${fmtTime(V3.simT)}`}
   else if(!ride&&V3.sim.ai&&!done){[T,Sx]=drillHud(an,f,s)}
   else if(!ride&&off>25){T=`Off your line by ${Math.round(off)} m`;Sx=`Bring her back to ${cr>0?'starboard':'port'}: steer ${String(Math.round(aim)%360).padStart(3,'0')}°.`}
-  else if((()=>{const c=calls().filter(c=>c.m<=gone&&gone-c.m<45&&c.kind!=='start').pop();if(!c)return false;T=c.title;Sx=c.text||'';if(V3.sim.going&&V3._said!==c){V3._said=c;if(LS.get('cp.v3speak',false)&&window.speechSynthesis){try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(c.say))}catch(e){}}}return true})()){}
+  else if((()=>{const cl=calls(),c=cl.filter(c=>c.m<=gone&&gone-c.m<45&&c.kind!=='start').pop();if(!c)return false;T=`${cl.indexOf(c)+1}. ${c.title}`;Sx=c.text||'';if(V3.sim.going&&V3._said!==c){V3._said=c;if(LS.get('cp.v3speak',false)&&window.speechSynthesis){try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(c.say))}catch(e){}}}return true})()){}
   else if(next){const dm=next.s*f-gone;if(dm<=25){T=`${next.name}: turn to ${next.dir}`;Sx=`Buoy on your ${next.side}. More pressure from ${next.dir==='port'?'starboard':'port'}, ease ${next.dir}.`}
-    else{T=`${next.name} in ${fmtM(dm)} · ${strokes(dm,li)} strokes`;Sx=dm<250?`Ready to turn ${next.dir}: ${next.angle>=70?'big':'easy'} turn, buoy on your ${next.side}.`:`Hold your point: ${pointOfAim(an,an.legs[li])}.`}}
-  else{const left=an.len-gone;T=`Finish in ${fmtM(left)} · ${strokes(left,an.legs.length-1)} strokes`;Sx=left<500?'Sprint: build the rate to the line.':'Last leg: hold the line to the finish buoys.'}
+    else{T=`${next.name}: ${strokes(dm,li)} strokes · about ${Math.max(1,Math.round(dm/17.5))} lengths`;Sx=dm<250?`Ready to turn ${next.dir}: ${next.angle>=70?'big':'easy'} turn, buoy on your ${next.side}.`:`Hold your point: ${pointOfAim(an,an.legs[li])}.`}}
+  else{const left=an.len-gone;T=`${REG==='prac'?'End of the lane':'Finish'} in ${strokes(left,an.legs.length-1)} strokes`;Sx=left<500?'Sprint: build the rate to the line.':'Last leg: hold the line to the finish buoys.'}
   set('v3ct',T);set('v3cs',Sx)}
 
 function results3(){const m=V3.sim,an=currentAnalysis();if(m.ai&&!m.aground){drillResults(m,an);return}const f=an.len/an.raw;const plan=m.end!=null?elapsed(an,m.end)-elapsed(an,m.s0):totalTime(an);
