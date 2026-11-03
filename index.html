@@ -1350,6 +1350,20 @@ const QUIZ=[
 ];
 const PSRC=[['Head of the Lake rules and regulations','https://www.headofthelake.org/rules-regulations'],['row2k: A note on yield-ing','https://www.row2k.com/features/5939/a-note-on-yield-ing/'],['RowSource: Head of the Charles top 5 coxing tips','https://www.rowsource.com/cox/hocr-top-5-coxing-tips'],['British Rowing: Phelan Hill on improving your coxing','https://www.britishrowing.org/2018/11/how-can-you-improve-your-coxing-skills-olympic-cox-phelan-hill-provides-tips/'],['Ready All Row: coxing how-to, racing','https://readyallrow.org/?p=8048'],['OURCs coxing competencies','https://ourcs.co.uk/coxing/coxing-competencies/']];
 // Practice page: the plan for the straight-line pass, drawn as a diagram with the calls in order
+// Drill page: the plan for being overtaken, drawn like the passing plan (port up, rowing right)
+function yieldCard(){const P=yieldPlan({len:1,raw:1}),L=BOATL,M=P.b1+40,W=640,H=160,yc=78,y=l=>yc+l*7;
+  const kn=[[0,90],...P.pc.slice(1).map((c,i)=>[c.m,170+i*58]),[P.b1,600],[M,626]];
+  const x=m=>{for(let i=1;i<kn.length;i++)if(m<=kn[i][0]){const [a,xa]=kn[i-1],[b,xb]=kn[i];return xa+(xb-xa)*(m-a)/(b-a||1)}return kn[kn.length-1][1]};
+  const bw=60,boat=(x0,l,fill,edge,lab,up)=>`<g><rect x="${x0}" y="${y(l)-4}" width="${bw}" height="8" rx="4" fill="${fill}" stroke="${edge}" stroke-width="1.5"/><text x="${x0+bw/2}" y="${y(l)+(up?-10:20)}" font-size="11" font-weight="700" text-anchor="middle" fill="${fill==='#7b1e34'?'#7b1e34':'#1f3a68'}">${lab}</text></g>`;
+  let d='';for(let m=0;m<=M;m+=4)d+=(m?'L':'M')+x(m).toFixed(1)+','+y(P.lat(m)).toFixed(1);
+  const dots=P.pc.filter(c=>c.n>1).map(c=>`<g><circle cx="${x(c.m)}" cy="${y(P.lat(c.m))}" r="9" fill="#f07a2a" stroke="#fff" stroke-width="1.5"/><text x="${x(c.m)}" y="${y(P.lat(c.m))+4}" font-size="11" font-weight="700" text-anchor="middle" fill="#fff">${c.n}</text></g>`).join('');
+  return`<div class="pplan"><h4>Plan: being overtaken</h4><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yield line diagram"><line x1="${x(0)}" y1="${yc}" x2="${x(M)}" y2="${yc}" stroke="#7b8a99" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="${x(M)}" y="${yc-8}" font-size="11" text-anchor="end" fill="#5b6875">your line</text><line x1="14" y1="${y(YLD.their)}" x2="${x(M)}" y2="${y(YLD.their)}" stroke="#1f3a68" stroke-width="1.5" stroke-dasharray="2 4" opacity=".7"/><text x="${x(P.pc[4].m)}" y="${y(YLD.their)-8}" font-size="10" text-anchor="middle" fill="#1f3a68">their line, ${Math.abs(YLD.their)} m to your port</text>
+    <path d="${d}" fill="none" stroke="#f07a2a" stroke-width="3"/><text x="${(x(P.pc[3].m)+x(P.pc[5].m))/2}" y="${y(YLD.lane)+24}" font-size="11" text-anchor="middle" fill="#c25a14" font-weight="700">yield line, ${YLD.lane} m to starboard</text>
+    ${boat(14,YLD.their,'#1f3a68','#fff','Faster crew',true)}${boat(x(0)+2,0,'#7b1e34','#e0b12a','You')}${dots}
+    <text x="14" y="${H-6}" font-size="11" fill="#5b6875">Rowing this way →</text><text x="${x(M)}" y="${H-6}" font-size="11" text-anchor="end" fill="#5b6875">about ${Math.round(P.b1/10)*10} m, not to scale</text></svg>
+    <ol class="pcalls">${P.pc.map(c=>`<li><b>${esc(c.t)}</b><span>${esc(c.when)}</span></li>`).join('')}</ol>
+    <p class="sub">They row about ${Math.round((YLD.k-1)*100)}% faster than you. A top cox treats it as a race, not a disaster: talk to your own crew, give clean water early so nobody clashes, and use their push to lift your own rhythm. Never stop or hold water to let them by.</p><p class="sub"><b>The rule (Head of the Lake):</b> once they are within a length of open water they are overtaking you. You must yield the line they pick and start moving before they are half a length away. Failing to yield, or blocking them, is penalised.</p></div>`}
 function passCard(){const P=passPlan({len:1,raw:1}),L=BOATL,M=P.b1+40,W=640,H=150,yc=100,y=l=>yc+l*6; // heading right on the page, port is up
   // not to scale: the start (both boats) gets room, then the calls are spaced evenly
   const kn=[[0,14],[P.out1,230],...P.pc.slice(3).map((c,i)=>[c.m,290+i*72]),[P.b1,600],[M,626]];
@@ -1388,7 +1402,7 @@ function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const
   <div class="pwater"><span class="sub">The 3D drills row on a drill lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills done.</span></div>
   <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}${k.turn?' wide':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Done</label></div>
     <p>${esc(k.why)}</p><ul>${k.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>
-    ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}${k.id==='pass'?passCard():''}
+    ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}${k.id==='pass'?passCard():k.id==='yield'?yieldCard():''}
     <div class="row">${k.drill?`<button class="btn" data-watch="${k.drill}">▶ Watch it first</button><button class="btn primary" data-drill="${k.drill}">${DRILLNAME[k.drill]} in 3D</button>`:''}${k.turn?turnCards():''}${k.course?'<button class="btn primary" data-pcourse="1">Steer a course in 3D</button>':''}${k.tab?`<button class="btn" data-ptab="${k.tab}">Open ${k.tab==='calls'?'Calls':'Replay'} in Race</button>`:''}${k.quiz?'<button class="btn" data-pquiz="1">Take the quiz</button>':''}</div>
     ${k.drill&&last[k.drill]?`<p class="sub">Last try: ${esc(last[k.drill])}</p>`:''}</div>`).join('')}</div>
   <h2 id="pquiz">Rules quiz</h2><div class="qzs">${qs.map((q,i)=>{const a=qa[i];return`<div class="qz"><p><b>${i+1}.</b> ${esc(q.q)}</p><div class="qos">${q.o.map((o,j)=>`<button class="btn qo${a!=null?(j===q.a?' right':j===a?' wrong':''):''}" data-q="${i}" data-o="${j}"${a!=null?' disabled':''}>${esc(o)}</button>`).join('')}</div>${a!=null?`<p class="sub">${a===q.a?'✓ Right.':'✗ Not quite.'} ${esc(q.why)}</p>`:''}</div>`}).join('')}
@@ -1421,7 +1435,7 @@ function drillSpot(an){const f=an.len/an.raw;const nar=hazards().filter(h=>h.kin
   for(const h of nar)segs=segs.flatMap(([x,y])=>h.m1+40<x||h.m-40>y?[[x,y]]:[[x,h.m-40],[h.m1+40,y]].filter(([p,q])=>q-p>60));
   const b=segs.reduce((a,c)=>c[1]-c[0]>a[1]-a[0]?c:a,segs[0]||[90,an.len-150]);
   const kind=V3.drill;const s0m=b[0];const len=kind==='wind'?900:kind==='pass'?PASS.len:1300;return{s0:s0m/f,end:Math.min(an.len-30,s0m+len)/f,
-    ai:kind==='pass'?{kind:'slow',am:s0m+BOATL+PASS.gap0,lat:0,tlat:0,k:PASS.k}:kind==='yield'?{kind:'fast',am:s0m-55,lat:0,tlat:0,k:1.16}:null}}
+    ai:kind==='pass'?{kind:'slow',am:s0m+BOATL+PASS.gap0,lat:0,tlat:0,k:PASS.k}:kind==='yield'?{kind:'fast',am:s0m-BOATL-YLD.gap0,lat:0,tlat:0,k:YLD.k}:null}}
 function aiPose(an,a){const f=an.len/an.raw;const {p,h}=pointAt(an.pts,an.cum,Math.max(0,a.am)/f);const r=h*RAD;return{x:p[0]+Math.cos(r)*a.lat,y:p[1]-Math.sin(r)*a.lat,h:(h+(a.yaw||0)+360)%360,lh:h}}
 /* straight-line overtake (Audrey): start close behind, a planned passing line out to starboard and back, and the calls in order */
 const PASS={gap0:25,k:.86,lane:-4,move:5,len:720}; // lane: negative is to port
@@ -1437,6 +1451,31 @@ function passPlan(an){const f=an.len/an.raw;const v=legSpeed(0),d=v*(1-PASS.k),L
   const out0=10,out1=60,b0=pc[6].m,b1=b0+60;const lat=m=>m<out0?0:m<out1?PASS.lane*sm((m-out0)/(out1-out0)):m<b0?PASS.lane:m<b1?PASS.lane*(1-sm((m-b0)/(b1-b0))):0;
   return{pc,lat,b1,out1}}
 const sm=u=>u*u*(3-2*u);
+// being overtaken (Audrey: think like a top cox): a faster crew starts 3 lengths behind. They pass on your port, you give them starboard water.
+// Rules (Head of the Lake): they are overtaking once within a length of open water; you must start moving before they are half a length away; never stop rowing.
+const YLD={gap0:52.5,k:1.16,lane:5,their:-4};
+function yieldPlan(an){const L=BOATL,g=YLD.gap0,at=gap=>(g-gap)/(YLD.k-1); // metres you row while they close to that gap
+  const pc=[{n:1,m:0,key:'start',t:'“Crew behind. Eyes in the boat, stay long”',say:'Crew coming up behind. Eyes in the boat, stay long. I have got them.',when:'At the start, they are about 3 lengths behind. One quick look over your shoulder, then talk to your own crew, not about them'},
+    {n:2,m:at(2*L),key:'look',t:'“They’re two lengths back on our port”',say:'Two lengths back, on our port. We give them starboard water when they call.',when:'A glance back at 2 lengths: see which side they are coming on, so the yield is already planned'},
+    {n:3,m:at(L),key:'yield',t:'They call “Yield!”: “Yielding to starboard, now!” (Y)',say:'Yielding to starboard, now. Keep the pressure on.',when:'At one length of open water they become the overtaking crew and call. Answer at once and put a small, steady rudder on to starboard. The crew keeps full pressure'},
+    {n:4,m:at(L/2),key:'clear',t:'“On our new line, stay long”',say:'On our new line. Stay long, stay together.',when:`By half a length you must be moving, and a top cox is already ${YLD.lane} m over, giving them ${YLD.lane-YLD.their} m between the boats`},
+    {n:5,m:at(0),key:'hold',t:'Overlap: “Hold them! Make them earn every seat!” (P)',say:'They are on us. Hold them. Make them earn every seat.',when:'Their bow reaches your stern. You may race them hard with a power ten, just never steer back into their water'},
+    {n:6,m:at(-L),key:'level',t:'“Bow balls level, stay with them”',say:'Bow balls level. Stay with them, long and strong.',when:'Their bow is level with yours: keep your crew’s eyes in the boat, the rhythm is yours, not theirs'},
+    {n:7,m:at(-2*L),key:'through',t:'“They’re through. Stay long through their wash”',say:'They are through. Stay long through the wash.',when:'Their stern passes your bow. Their puddles and wash will rock the boat: sit tall and keep the hands level'},
+    {n:8,m:at(-3*L),key:'back',t:'“Back to our line”',say:'Back to our line. Settle, and go after the next crew.',when:'A full length of open water ahead of you: ease back to port, onto your line'}];
+  const o0=pc[2].m+4,o1=pc[3].m,b0=pc[7].m,b1=b0+60;const lat=m=>m<o0?0:m<o1?YLD.lane*sm((m-o0)/(o1-o0)):m<b0?YLD.lane:m<b1?YLD.lane*(1-sm((m-b0)/(b1-b0))):0;
+  return{pc,lat,b1,out1:o1,kind:'yield',name:'yield line'}}
+// the yield calls as the drill goes; Y (answer the call) and P (power ten) are yours to make
+function yieldCalls(m,an,f,pm,a){const P=V3.plan;if(!P||P.kind!=='yield')return;const c=m.pcall||(m.pcall={});const L=BOATL;const gap=pm-(a.am+L);
+  const go=(k,cond)=>{if(c[k]||!cond)return;c[k]=m.t||.01;const x=P.pc.find(p=>p.key===k);flash3(`${x.n}. ${x.t.replace(/ \((Y|P)\)$/,'')}`,x.when);if(k!=='yield')say3(x.say)};
+  go('start',m.t>.5);go('look',gap<=2*L);
+  if(a.called&&!m.ack&&!c.ansPrompt){c.ansPrompt=m.t;flash3('3. They call “Yield!”: answer it (Y)','“Yielding to starboard, now!” and put a small rudder on to starboard.')}
+  if(m.ack)c.yield=c.yield||m.ack;
+  go('clear',gap<=L/2&&!!m.ack);go('hold',gap<=0);go('level',gap<=-L);go('through',gap<=-2*L);go('back',gap<=-3*L)}
+function ackYield(){const m=V3.sim;if(!m||!m.ai||m.ai.kind!=='fast'||!m.going||m.done)return;const a=m.ai;if(m.ack)return;
+  if(!a.called){m.early=(m.early||0)+1;flash3('Not yet','They have not called. Keep rowing and watch them come up.');return}
+  m.ack=m.t;const P=V3.plan,x=P&&P.pc.find(p=>p.key==='yield');if(m.pcall)m.pcall.yield=m.t;flash3('3. “Yielding to starboard, now!”','Small, steady rudder to starboard. Keep full pressure.');say3('Yielding to starboard, now. Keep the pressure on.')}
+
 // the passing line as points on the map (raw units), from where the drill starts
 function passPts(an,s0){const f=an.len/an.raw,P=V3.plan;const out=[];for(let m=0;m<=P.b1+40;m+=5){const q=pointAt(an.pts,an.cum,Math.min(an.raw,s0+m/f));const r=q.h*Math.PI/180,l=P.lat(m)/f;out.push([q.p[0]+Math.cos(r)*l,q.p[1]-Math.sin(r)*l])}return out}
 function passAt(an,s0,m){const f=an.len/an.raw,P=V3.plan;const q=pointAt(an.pts,an.cum,Math.min(an.raw,s0+m/f));const r=q.h*Math.PI/180,l=P.lat(m)/f;return[q.p[0]+Math.cos(r)*l,q.p[1]-Math.sin(r)*l]}
@@ -1467,20 +1506,22 @@ function aiTag3(an,AI){const B=V3.aiBoat;let mk=B.userData.mk;if(!mk){mk=new THR
   // local -x is port: the zone reaches out to the passing line on their port side, one boat length behind their stern
   z.position.set(Math.sign(PASS.lane)*4.5,.32,BOATL/2);z.visible=AI.kind==='slow'&&!!V3.plan&&!AI.called;
   const m=V3.sim,f=an.len/an.raw,pm=m.s*f;const gap=AI.kind==='slow'?AI.am-(pm+BOATL):pm-(AI.am+BOATL);const nm=AI.kind==='slow'?'Crew to pass':'Crew behind';
-  const txt=gap>0?`${nm} · ${Math.round(gap)} m`:`${nm} · overlapping`;const now=performance.now();
+  const txt=gap>0?`${nm} · ${Math.round(gap)} m`:`${nm} · overlapping`;mk.visible=!(gap<0&&gap>-2*BOATL);const now=performance.now();
   if(B.userData.tagT!==txt&&(!B.userData.tagAt||now-B.userData.tagAt>350)){const o=B.userData.labo;if(o){B.remove(o);o.material.map.dispose();o.material.dispose()}
     const sp=textSprite(txt,{size:.04,maxD:3000,bg:'#1f3a68',fg:'#fff',keep:true});sp.position.set(0,8.6,-8.75);B.add(sp);B.userData.labo=sp;B.userData.tagT=txt;B.userData.tagAt=now}}
 function say3(t){if(LS.get('cp.v3speak',false)&&window.speechSynthesis){try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}}}
 function stepAI(m,an,f,pr,off,dt){const a=m.ai,L=BOATL;const pm=pr.s*f;const cr=pr.dir[0]*(m.y-pr.q[1])-pr.dir[1]*(m.x-pr.q[0]);const plat=cr>0?-off:off;m.plat=plat;
   let v=legSpeed(legIdxAt(an,Math.max(0,a.am)/f))*a.k;const sep=Math.abs(a.lat-plat);const ahead=a.am-pm;const over=ahead<L&&ahead>-L;m.cap=0;
   if(a.kind==='fast'){const gap=pm-(a.am+L); // open water between their bow and your stern
-    if(a.side==null&&gap<45){const t=an.turns.find(t=>t.s*f>a.am+20);a.side=t&&t.s*f-pm<700?(t.dir==='port'?-1:1):-1;a.tlat=a.side*3}
-    if(!a.called&&gap<=25){a.called=m.t||.01;m.away=a.side<0?'starboard':'port';flash3(`Crew behind: “Yield! Move to ${m.away}!”`,`They pass on your ${a.side<0?'port':'starboard'}. Move ${m.away} and keep rowing.`);say3('Yield! Move to '+m.away)}
+    if(a.side==null&&gap<45){const t=an.turns.find(t=>t.s*f>a.am+20);a.side=t&&t.s*f-pm<700?(t.dir==='port'?-1:1):-1;a.tlat=a.side*Math.abs(YLD.their)}
+    if(!a.called&&gap<=(V3.plan?L:25)){a.called=m.t||.01;m.away=a.side<0?'starboard':'port';flash3(`Crew behind: “Yield! Move to ${m.away}!”`,`They pass on your ${a.side<0?'port':'starboard'}. Move ${m.away} and keep rowing.`);say3('Yield! Move to '+m.away)}
     if(a.called&&m.clearT==null&&sep>=8&&gap>L*.5){m.clearT=m.t;flash3('Clear ✓',`${Math.round(sep)} m between the boats. Keep rowing and hold your new line.`)}
-    if(a.called&&m.clearT==null&&gap<=L*.5&&!m.late){m.late=true;flash3('Too late!',`They are on you. Move to ${m.away} now.`)}
+    if(a.called&&m.clearT==null&&gap<=L*.5&&!m.late&&Math.abs(m.plat||0)<1.5){m.late=true;flash3('Too late!',`Half a length and you have not moved: the rules say you must be moving now. Move to ${m.away}.`)}
+    if(V3.plan)yieldCalls(m,an,f,pm,a);
     // they cannot row through you: they sit on your stern until you move
     if(sep<8&&gap<3&&gap>-2){v=Math.min(v,m.v*f);m.block=(m.block||0)+dt}
-    if(a.am-(pm+L)>=L&&!m.done){m.passed=true;m.done=true;m.going=false;results3()}}
+    if(a.am-(pm+L)>=L&&!m.passed){m.passed=true;if(!V3.plan){m.done=true;m.going=false;results3()}}
+    if(m.passed&&V3.plan&&!m.done){const mm=pm-m.s0*f;if(mm>=V3.plan.b1&&(Math.abs(plat)<=3||mm>=V3.plan.b1+90)){m.backOK=Math.abs(plat)<=3;m.done=true;m.going=false;results3()}}}
   else{const gap=a.am-(pm+L); // open water between your bow and their stern
     if(over&&m.overT==null){m.overT=m.t;m.side=plat<a.lat?'port':'starboard';if(!a.called){m.noCall=true;flash3('Call it!','You are overlapping and have not called “Yield!”. Press Y.')}}
     if(over&&inNarrow(pm)&&!m.narrowPass){m.narrowPass=true;flash3('No passing in narrow water!','Wait for open water before you overlap.')}
@@ -1491,7 +1532,7 @@ function stepAI(m,an,f,pr,off,dt){const a=m.ai,L=BOATL;const pm=pr.s*f;const cr=
   // hulls and blades: an eight's blades reach about 3.6 m each side
   if(over&&sep<7.5){if(!a.touch){a.touch=true;if(sep<2)m.hull=(m.hull||0)+1;m.clash=(m.clash||0)+1;flash3(sep<2?'Collision!':'Blades clash!',sep<2?'The hulls touched.':'Give the other crew at least 8 m between the boats.')}}else if(sep>8.5)a.touch=false;
   const dl=Math.max(-dt,Math.min(dt,a.tlat-a.lat));a.lat+=dl;a.yaw=dt?Math.atan2(dl/dt,Math.max(1,v))/RAD:0;a.am+=v*dt;a.v=v}
-function callYield(){const m=V3.sim;if(!m||!m.ai||m.ai.kind!=='slow'||!m.going||m.done)return;const a=m.ai;if(a.called)return;const an=currentAnalysis(),f=an.len/an.raw;const pm=m.s*f;const gap=a.am-(pm+BOATL);
+function callYield(){const m=V3.sim;if(m&&m.ai&&m.ai.kind==='fast'){ackYield();return}if(!m||!m.ai||m.ai.kind!=='slow'||!m.going||m.done)return;const a=m.ai;if(a.called)return;const an=currentAnalysis(),f=an.len/an.raw;const pm=m.s*f;const gap=a.am-(pm+BOATL);
   if(gap>30){m.early=(m.early||0)+1;flash3('Too early',`They are ${Math.round(gap)} m ahead and can’t hear you yet. Call when you are about a length away.`);return}
   if(inNarrow(pm)||inNarrow(a.am)){m.narrowCall=(m.narrowCall||0)+1;flash3('No passing here','Narrow water: wait for open water before you call.');return}
   const plat=m.plat||0;let side=plat<a.lat-2?1:plat>a.lat+2?-1:0; // they move away from the side you come up on
@@ -1512,6 +1553,12 @@ function drillHud(an,f,s){const m=V3.sim,a=m.ai;const pm=s*f;const sep=Math.roun
     if(gap<0)return['You are past them','Get a length clear before you come back to your line.'];
     return[`Crew ahead: ${Math.round(gap)} m of open water`,a.called?`They are moving to ${m.yieldSide}. Come up on their other side.`:gap>30?'Close up. Set up on the inside of the next turn.':'Within a length: call “Yield!” now (Y).']}
   const gap=pm-(a.am+BOATL);
+  if(V3.plan&&V3.plan.kind==='yield'){const P=V3.plan,c=m.pcall||{},mm=pm-m.s0*f,off=(m.plat||0)-P.lat(mm);const nx=P.pc.find(p=>!c[p.key]);const L=BOATL;
+    const p10=m.p10T&&m.t<m.p10T?` · power ten: ${Math.max(1,Math.ceil((m.p10T-m.t)*legRate(0)/60))} to go`:'';
+    const where=gap>0?`Crew behind: ${Math.round(gap)} m of open water · ${(gap/L).toFixed(1)} lengths`:pm+L>a.am+L?`Overlapping · ${sep} m between boats`:`They are ${Math.max(0,Math.round(a.am-(pm+L)))} m ahead`;
+    if(a.called&&!m.ack)return[where+p10,'They called “Yield!”: answer now (Y) and move to starboard.'+(gap<L*.5?' You are late.':'')];
+    const steer=Math.abs(off)>2.5?` Steer ${off>0?'port':'starboard'} ${Math.round(Math.abs(off))} m to the yield line.`:' On the yield line.';
+    return[where+p10,(nx?`Next call ${nx.n}: ${nx.t}.`:'Settle and hold your line.')+steer]}
   if(gap<0)return[`Overlapping · ${sep} m between boats`,sep>=8?'Good, hold it and keep rowing.':`Move to ${m.away||'the side'}: they need 8 m.`];
   return[`Crew behind: ${Math.round(gap)} m`,!a.called?'Keep rowing. Check where they are on the live map and chase view.':m.clearT!=null?'Clear. Hold your line and keep rowing.':`Move to ${m.away} now.`]}
 function drillResults(m,an){const f=an.len/an.raw;const tr=(k,v,ok)=>`<tr><td>${k}</td><td class="${ok==null?'':ok?'ok':'bad'}">${v}</td></tr>`;let rows='',head,sum;
@@ -1525,8 +1572,11 @@ function drillResults(m,an){const f=an.len/an.raw;const tr=(k,v,ok)=>`<tr><td>${
     if(m.passed&&m.inside!=null)rows+=tr('Next turn',m.inside?`Passed on the inside of ${esc(m.nextTurn.name)}`:`Passed on the outside of ${esc(m.nextTurn.name)}: set up for the inside next time`,m.inside);
     if(m.narrowPass)rows+=tr('Narrow water','You overlapped in narrow water: no passing there',false);
     sum=head+(m.passed?' in '+fmtTime(m.passT):'')}
-  else{const ok=m.clearT!=null&&!m.late&&!m.clash;head=m.aground?'Aground near '+esc(m.aground):ok?'Yielded well ✓':m.passed?'They got past, with problems':'They have not got past yet';
+  else{const ok=m.clearT!=null&&!m.late&&!m.clash&&(!V3.plan||!!m.ack);head=m.aground?'Aground near '+esc(m.aground):ok?'Yielded well ✓':m.passed?'They got past, with problems':'They have not got past yet';
+    if(V3.plan)rows+=tr('Answered the call',m.ack?`${(m.ack-m.ai.called).toFixed(1)} s after they called`:'Never answered: say “Yielding to starboard!” (Y)',!!m.ack&&m.ack-m.ai.called<=3);
     rows+=tr('Move over',m.clearT!=null?`Clear ${fmtTime(m.clearT-m.ai.called)} after their call${m.late?', but late':''}`:'You did not make room',m.clearT!=null&&!m.late);
+    if(V3.plan&&m.passed)rows+=tr('Back to the line',m.backOK?'Back on your line once they were a length clear':'Still out to the side: ease back once they are a length clear',!!m.backOK);
+    if(V3.plan&&m.tens)rows+=tr('Held them',`${m.tens} power ten${m.tens>1?'s':''} as they came through`,null);
     if(m.block)rows+=tr('Blocked them',`${Math.round(m.block)} s sat on your stern (a 60 s penalty in a real race)`,false);
     sum=head}
   rows+=tr('Clashes',m.clash?`${m.clash}${m.hull?', '+m.hull+' with hulls touching':''}`:'None',!m.clash);
@@ -1856,13 +1906,14 @@ function resetSim(){V3._said=null;_flash=null;V3.centre=false;const an=currentAn
   V3.sim={x:p[0],y:p[1],h:bearing(p,pointAt(an.pts,an.cum,s0+40/f).p),v:T||DR||REG==='prac'?legSpeed(legIdxAt(an,s0))/f:0,rud:0,t:0,going:false,done:false,
     off:0,offMax:0,rudT:0,marks:an.marks.filter(m=>DR?m.s>=s0&&m.s<=end:!T||m.name===T.name).map(m=>({m,prev:null,res:null,minD:1e9})),aground:null,hits:0,s:s0,s0,end,turn:T,drill:V3.drill,ai:DR&&DR.ai?{...DR.ai}:null};
   // crosswind drill: a steady 12 kt from the beam of the first leg, and it moves the boat
-  V3.plan=V3.drill==='pass'&&!an.turns.length?passPlan(an):null;if(V3.built)passMarks3(an,s0);
+  V3.plan=V3.drill==='pass'&&!an.turns.length?passPlan(an):V3.drill==='yield'&&!an.turns.length?yieldPlan(an):null;if(V3.built)passMarks3(an,s0);
   if(V3.drill==='wind'){const h=(pointAt(an.pts,an.cum,s0).h+90)%360;V3.dw={dir:h,spd:12,label:String(Math.round(h)).padStart(3,'0')+'° · 12 knots (drill)'}}
   if(rideM()){S.pos=s0;S.playing=false}V3.simT=0;V3.hs=null;$('#v3res').hidden=true;ui3()}
 
 // the computer coxes a drill: follows the passing line, calls "Yield!" at a length and the power ten at the overlap, moves over when a faster crew calls
 function autoPilot(m,an,f){const pm=m.s*f,a=m.ai;let tl=0;
   if(a&&a.kind==='slow'){const gap=a.am-(pm+BOATL);if(!a.called&&gap<=BOATL)callYield();if(gap<=0&&!m.tens)power10();if(V3.plan)tl=V3.plan.lat(pm-m.s0*f+25)}
+  else if(a&&a.kind==='fast'&&V3.plan){if(a.called&&!m.ack&&m.t-a.called>.8)ackYield();const gap=pm-(a.am+BOATL);if(gap<=0&&!m.tens)power10();tl=m.ack||V3.plan.lat(pm-m.s0*f+25)===0?V3.plan.lat(pm-m.s0*f+25):0}
   else if(a&&a.kind==='fast'&&a.called&&m.away)tl=m.away==='starboard'?9:-9;
   const {p,h}=pointAt(an.pts,an.cum,Math.min(an.raw,m.s+25/f));const r=h*Math.PI/180;const aim=[p[0]+Math.cos(r)*tl/f,p[1]-Math.sin(r)*tl/f];
   m.rud=Math.max(-1,Math.min(1,angDiff(m.h,bearing([m.x,m.y],aim))/12))}
@@ -1965,7 +2016,7 @@ function hud3(an,P,w){const f=an.len/an.raw,set=(id,v)=>{const e=document.getEle
   else if(V3.plan&&V3.sim){const mm=(s-V3.sim.s0)*f,plat=cr>0?-off:off,dev=plat-V3.plan.lat(mm);const am=bearing([P.x,P.y],passAt(an,V3.sim.s0,mm+60)),da=angDiff(P.h,am);
     // in the pass drill the heading and the side bar follow the passing line, not the course line
     set('v3aim',`Steer ${String(Math.round(am+360)%360).padStart(3,'0')}°${Math.abs(da)>=3?(da>0?' · come to starboard':' · come to port'):' · on it'}`);
-    set('v3off',Math.abs(dev)<2?'On the passing line':`${Math.round(Math.abs(dev))} m ${dev<0?'port':'starboard'} of the passing line`);$('#v3offi').style.left=(50+Math.max(-48,Math.min(48,dev*2)))+'%'}
+    const ln=V3.plan.name||'passing line';set('v3off',Math.abs(dev)<2?'On the '+ln:`${Math.round(Math.abs(dev))} m ${dev<0?'port':'starboard'} of the ${ln}`);$('#v3offi').style.left=(50+Math.max(-48,Math.min(48,dev*2)))+'%'}
   else{const da=angDiff(P.h,aim);set('v3aim',`Steer ${String(Math.round(aim)%360).padStart(3,'0')}°${Math.abs(da)>=3?(da>0?' · come to starboard':' · come to port'):' · on it'}`+cue);
     set('v3off',off<2?'On your line':`${Math.round(off)} m ${cr>0?'port':'starboard'} of your line`);$('#v3offi').style.left=(50+Math.max(-48,Math.min(48,(cr>0?-1:1)*off*2)))+'%'}
   set('v3w',w.spd?w.label:'Calm');
@@ -1981,7 +2032,7 @@ function hud3(an,P,w){const f=an.len/an.raw,set=(id,v)=>{const e=document.getEle
   else if(!V3.sim.going&&V3.simT===0&&V3.sim.drill&&V3.mode==='ride'){T='Watch the computer cox this drill';Sx='It steers, and makes each call at the right moment: watch the other crew here, in the picture in picture and on the live map. Then pick Steer it and try it yourself. Press Start.'}
   else if(!V3.sim.going&&V3.simT===0&&V3.sim.drill){T={pass:'Overtake the slower crew ahead',yield:'A faster crew is coming up behind you',wind:'Crosswind: 12 knots from your starboard side'}[V3.sim.drill];
     Sx={pass:V3.plan?'You start a length and a half behind them. Follow the orange passing line out to port. When your bow ball reaches the yellow zone behind them (one length), call “Yield to starboard!” (Y), call the power ten (P) at the overlap, then back to your line a length clear. Press Start.':'They are about 3 lengths ahead. Close up, set up for the inside of the next turn, call “Yield!” (Y) when you are within a length, then walk through cleanly. Press Start.',
-      yield:'Keep rowing and watch for them in the chase view and on the live map. When they call, move over in good time: 8 m between the boats. Press Start.',
+      yield:V3.plan?'A faster crew starts 3 lengths behind and comes up on your port. Keep your crew rowing. When they call “Yield!” at one length, answer it (Y) and follow the orange yield line 5 m to starboard before they are half a length away. Hold them at the overlap if you like (P), then back to your line once they are a length clear. Press Start.':'Keep rowing and watch for them in the chase view and on the live map. When they call, move over in good time: 8 m between the boats. Press Start.',
       wind:'In this drill the wind pushes the boat. Hold a little rudder against it and keep on your line. Press Start.'}[V3.sim.drill]}
   else if(!V3.sim.going&&V3.simT===0){T=ride?'Ride your planned line':V3.sim.turn?`Practise ${V3.sim.turn.name}: turn to ${V3.sim.turn.dir}, buoy on your ${V3.sim.turn.side}`:'Steer your line';Sx=ride?'Sit in the cox seat and watch the course come at you. Press Start.':'Hold PORT or STARBOARD (or the ← → keys) to move the rudder. It stays where you leave it: tap the rudder bar or press ↓ to centre it. Wind is shown but does not move the boat yet. Press Start.'}
   else if(done){T='Finish';Sx=`${fmtM(an.len)} in ${fmtTime(V3.simT)}`}
@@ -2009,7 +2060,7 @@ function ui3(){for(const b of document.querySelectorAll('#v3mode button'))b.setA
   for(const b of document.querySelectorAll('#v3spd button'))b.setAttribute('aria-pressed',+b.dataset.s===V3.mult);
   const st=V3.mode==='steer';const fr=$('#v3from');fr.hidden=false;const an=currentAnalysis();
   fr.innerHTML=(REG==='prac'?'<optgroup label="Turns">'+PRAC_TURNS.keys.map(k=>`<option value="t:${k}">Turn: ${esc(PRAC_TURNS.info[k].name)}</option>`).join('')+'</optgroup>':'<option value="-1">Whole course</option>'+an.turns.map((t,i)=>`<option value="${i}">Practise ${esc(t.name)}</option>`).join(''))+'<optgroup label="Drills">'+Object.entries(DRILLNAME).map(([k,n])=>`<option value="d:${k}">Drill: ${n}</option>`).join('')+'</optgroup>';fr.value=V3.drill?'d:'+V3.drill:REG==='prac'&&PRAC_TURNS.info[S.course]?'t:'+S.course:String(V3.from);
-  $('#v3yield').hidden=!(st&&V3.drill==='pass');$('#v3p10').hidden=!(st&&V3.drill==='pass');
+  $('#v3yield').hidden=!(st&&(V3.drill==='pass'||V3.drill==='yield'));$('#v3p10').hidden=!(st&&(V3.drill==='pass'||V3.drill==='yield'));$('#v3yield').textContent=V3.drill==='yield'?'Yielding! (Y)':'Yield! (Y)';
   $('#v3port').hidden=!st;$('#v3stbd').hidden=!st;$('#v3rudw').style.visibility=st?'visible':'hidden';$('#v3offbar').style.display=st?'':'none'}
 
 async function open3(){const box=$('#v3');box.hidden=false;const msg=$('#v3msg');S.playing=false;
