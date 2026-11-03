@@ -266,7 +266,7 @@ body:has(.app[data-layout="top"]),body:has(.app[data-layout="big"]){margin:0;ove
 <div class="app">
 <header>
   <div class="brand"><h1>CoxPilot</h1><span id="regname"></span></div>
-  <div class="seg" role="group" aria-label="Page" id="vseg"><button data-v="race">Race</button><button data-v="practice">Practice</button></div>
+  <div class="seg" role="group" aria-label="Page" id="vseg"><button data-v="race">Race</button><button data-v="practice">Drill</button></div>
   <select id="reg" aria-label="Regatta" class="regsel racectl"><option value="al">American Lake Fall Classic</option><option value="hotl">Head of the Lake</option></select>
   <div class="seg racectl" role="group" aria-label="Race course" id="cseg"></div>
   <span class="inline racectl" style="display:inline-flex;align-items:center;gap:6px">Layout <span class="seg small" role="group" aria-label="Layout" id="lseg"><button data-l="side">Side by side</button><button data-l="top">Map on top</button><button data-l="big">Big map</button></span></span>
@@ -417,14 +417,14 @@ const PRAC_TURNS=(()=>{const T=[
     courses[t.k]={official:len,line:P,turns:buoys,names:t.names||[t.name],finish:[[e[0]-ue[1]*30,e[1]+ue[0]*30],[e[0]+ue[1]*30,e[1]-ue[0]*30]],finishName:'END OF LANE',start:[[s0[0]-us[1]*30,s0[1]+us[0]*30],[s0[0]+us[1]*30,s0[1]-us[0]*30]],turnName:t.name};
     smooth[t.k]={pts:sp.map(q=>[+q[0].toFixed(2),+q[1].toFixed(2)]),turns:arcs};info[t.k]=t}
   return{courses,smooth,info,keys:T.map(t=>t.k)}})();
-REGS.prac={name:'Practice lake',place:'Practice',date:'Any day',title:'CoxPilot Practice',scale:1,origin:{lat:47.6475,lon:-122.3045},
+REGS.prac={name:'Drill lake',place:'Drill',date:'Any day',title:'CoxPilot Drill',scale:1,origin:{lat:47.6475,lon:-122.3045},
   shore:[[-1350,-300],[-600,-310],[200,-300],[620,-200],[1000,120],[1280,480],[1300,1100],[700,1120],[380,820],[-80,330],[-500,300],[-1000,310],[-1350,300],[-1450,0]],
   islands:[],park:null,courses:{Straight:{official:1700,line:[[-1000,0],[700,0]],turns:[],names:[],finish:[[700,30],[700,-30]],finishName:'END OF LANE'},...PRAC_TURNS.courses},
   start:[[-1000,30],[-1000,-30]],finish:[[785.9,728.3],[828.3,685.9]],guide:[],yellow:[],chute:null,marshal:[],shallow:[],warmup:null,
   labels:[['Boathouse',-1300,330,'shore'],['Red barn',-450,-330,'shore'],['Water tower',380,-290,'shore'],['Tall pines',-180,370,'shore'],['Point',1120,230,'shore'],['Flagpole',860,40,'shore']],
   docks:null,north:{rot:0},sat:null,rainier:140,wx:{id:'KBFI',name:'Boeing Field',doc:'kbfi',lat:47.6475,lon:-122.3045},channel:[],takeout:[],pencil:[],
-  boathouses:[['Club',-1250,335]],bridges:[],legend:[['lane','Practice lane']],turnStyle:'tri',guideTerm:'Buoys',
-  note:'A practice lake made up for the drills, not a real regatta course.'};
+  boathouses:[['Club',-1250,335]],bridges:[],legend:[['lane','Drill lane']],turnStyle:'tri',guideTerm:'Buoys',
+  note:'A drill lake made up for the drills, not a real regatta course.'};
 FALLBACKS.prac=FALLBACKS.hotl;SMOOTH.prac=PRAC_TURNS.smooth;
 // Head of the Lake opens first (Audrey, 2026-10-31); a viewer's own pick is remembered. The Practice page always uses the practice lake.
 const PRACTICE=LS.get('cp.view','race')==='practice';
@@ -1384,9 +1384,9 @@ function turnTip(t,sm){const a=sm.turns[0],deg=Math.round(a.ang),st=Math.max(1,s
   if(t.kind==='tight')return`A tight ${deg}° turn to ${dir}. It needs nearly full rudder and strong ${out} pressure, started about ${st} strokes before the buoy. Start late and you swing wide; cut it and you hit the buoy.`;
   return`Two turns close together, ${deg}° to port then to starboard. Don’t let the rudder off fully between them: come out of the first already setting up for the second, and switch the pressure call to the other side.`}
 function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const done=LS.get('cp.skilldone',{}),last=LS.get('cp.drilllast',{});const qs=QUIZ;const qa=S.quiz||(S.quiz={});
-  el.innerHTML=`<h2>Practice</h2><p class="lead">The race skills every cox needs, for any regatta. Read each one, row the drills in 3D, and tick it once you have practised it.</p>
-  <div class="pwater"><span class="sub">The 3D drills row on a practice lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills practised.</span></div>
-  <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}${k.turn?' wide':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Practised</label></div>
+  el.innerHTML=`<h2>Drill</h2><p class="lead">The race skills every cox needs, for any regatta. Read each one, row the drills in 3D, and tick it once you have done it.</p>
+  <div class="pwater"><span class="sub">The 3D drills row on a drill lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills done.</span></div>
+  <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}${k.turn?' wide':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Done</label></div>
     <p>${esc(k.why)}</p><ul>${k.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>
     ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}${k.id==='pass'?passCard():''}
     <div class="row">${k.drill?`<button class="btn" data-watch="${k.drill}">▶ Watch it first</button><button class="btn primary" data-drill="${k.drill}">${DRILLNAME[k.drill]} in 3D</button>`:''}${k.turn?turnCards():''}${k.course?'<button class="btn primary" data-pcourse="1">Steer a course in 3D</button>':''}${k.tab?`<button class="btn" data-ptab="${k.tab}">Open ${k.tab==='calls'?'Calls':'Replay'} in Race</button>`:''}${k.quiz?'<button class="btn" data-pquiz="1">Take the quiz</button>':''}</div>
@@ -1407,7 +1407,7 @@ function keepScroll(fn){const el=$('#practice'),a=el.scrollTop,w=scrollY;fn();el
 // Practice is its own page, apart from any regatta (Audrey): the header switches between it and Race
 function setView(v){if((v==='practice')!==PRACTICE){LS.set('cp.view',v);location.reload();return}const app=document.querySelector('.app');app.dataset.view=v;$('#practice').hidden=v!=='practice';LS.set('cp.view',v);
   for(const b of document.querySelectorAll('#vseg button'))b.setAttribute('aria-pressed',b.dataset.v===v);
-  $('#regname').textContent=v==='practice'?'Practice · skills for any race':D.name+' · '+D.date;
+  $('#regname').textContent=v==='practice'?'Drill · skills for any race':D.name+' · '+D.date;
   if(v==='practice')renderPractice();else setTimeout(()=>{if(typeof setVB==='function')setVB()},60)}
 // on the practice lake the drills row on the straight lane, turn practice on the lane with the turn
 function pracCourse(turn){if(REG!=='prac')return;const k=turn?(typeof turn==='string'?turn:LS.get('cp.pturn','Port90')):'Straight';if(!COURSES[k])return;if(S.course!==k)setCourse(k);S.activeRoute=SMOOTH.prac[k]?'smooth-'+k:'marked'}
@@ -1842,7 +1842,7 @@ function buildCourse3(){
 }
 
 /* wind at a moment of the row (seconds from the planned start); VRB wanders, gusts pulse */
-function wind3(t){if(V3.drill==='wind'&&V3.dw)return V3.dw;if(REG==='prac')return{dir:0,spd:0,label:'Calm (practice lake)'};const T=taf();if(!T||T.error||!T.hours.length)return{dir:0,spd:0,label:'Calm'};baseHour();
+function wind3(t){if(V3.drill==='wind'&&V3.dw)return V3.dw;if(REG==='prac')return{dir:0,spd:0,label:'Calm (drill lake)'};const T=taf();if(!T||T.error||!T.hours.length)return{dir:0,spd:0,label:'Calm'};baseHour();
   const h=T.hours[Math.min(T.hours.length-1,Math.max(0,S.hourIdx)+Math.floor(t/3600))];const w=h&&h.wind;if(!w||!w.spd)return{dir:0,spd:0,label:'Calm',sky:h&&h.sky};
   const g=w.gust?Math.max(0,Math.sin(t/7)*Math.sin(t/3.1))*(w.gust-w.spd):0;
   let dir=w.dir;if(dir==='VRB'||dir==null){const base=T.hours.find(x=>x.wind&&typeof x.wind.dir==='number');dir=((base?base.wind.dir:0)+70*Math.sin(t/41)+35*Math.sin(t/13)+360)%360}
@@ -1916,11 +1916,11 @@ function frame3(t){if(!V3.run)return;V3.raf=requestAnimationFrame(frame3);
   const an=currentAnalysis();const P=pose3();const going=V3.sim.going;
   // crew stroke cycle
   const s=rideM()?S.pos:V3.sim.s;const rate=legRate(legIdxAt(an,s));if(going)V3.phase=(V3.phase+sdt*rate/60)%1;const ph=V3.phase,dr=.38;
-  let sweep,lift,slide;if(!going){sweep=0;lift=.25;slide=.4}else if(ph<dr){const u=ph/dr;const e=.5-.5*Math.cos(u*Math.PI);sweep=-52+88*e;lift=0;slide=1-e}else{const u=(ph-dr)/(1-dr);const e=.5-.5*Math.cos(u*Math.PI);sweep=36-88*e;lift=Math.sin(u*Math.PI)*.35+.04;slide=e}
+  let sweep,lift,slide;if(!going){sweep=0;lift=.08;slide=.4}else if(ph<dr){const u=ph/dr;const e=.5-.5*Math.cos(u*Math.PI);sweep=-52+88*e;lift=0;slide=1-e}else{const u=(ph-dr)/(1-dr);const e=.5-.5*Math.cos(u*Math.PI);sweep=36-88*e;lift=Math.sin(u*Math.PI)*.06+.055;slide=e}
   rowCrew(V3.crew,sweep,lift,slide);
   const AI=V3.sim.ai;if(V3.aiBoat){V3.aiBoat.visible=!!AI;if(AI){const A=aiPose(an,AI);V3.aiBoat.position.copy(W3(A.x,A.y));V3.aiBoat.rotation.y=-A.h*RAD;
     aiTag3(an,AI);
-    if(going)V3.aiPh=((V3.aiPh||0)+sdt*rate*(AI.kind==='fast'?1.05:.93)/60)%1;const q=V3.aiPh||0;let sw,li,sl;if(!going){sw=0;li=.25;sl=.4}else if(q<dr){const e=.5-.5*Math.cos(q/dr*Math.PI);sw=-52+88*e;li=0;sl=1-e}else{const e=.5-.5*Math.cos((q-dr)/(1-dr)*Math.PI);sw=36-88*e;li=Math.sin((q-dr)/(1-dr)*Math.PI)*.35+.04;sl=e}
+    if(going)V3.aiPh=((V3.aiPh||0)+sdt*rate*(AI.kind==='fast'?1.05:.93)/60)%1;const q=V3.aiPh||0;let sw,li,sl;if(!going){sw=0;li=.08;sl=.4}else if(q<dr){const e=.5-.5*Math.cos(q/dr*Math.PI);sw=-52+88*e;li=0;sl=1-e}else{const e=.5-.5*Math.cos((q-dr)/(1-dr)*Math.PI);sw=36-88*e;li=Math.sin((q-dr)/(1-dr)*Math.PI)*.06+.055;sl=e}
     rowCrew(V3.aiBoat.userData.crew,sw,li,sl)}}
   // boat and camera
   const B=V3.boat;B.position.copy(W3(P.x,P.y));B.rotation.y=-P.h*RAD;
@@ -1997,7 +1997,7 @@ function results3(){const m=V3.sim,an=currentAnalysis();if(m.ai&&!m.aground){dri
   const rows=m.marks.map(b=>{const r=b.res;return`<tr><td>${esc(b.m.name)}</td><td class="${r&&r.ok?'ok':'bad'}">${r?(r.ok?'Correct, on your '+r.side:'Wrong side ('+r.side+')')+` · ${Math.round(r.clear)} m`:(m.aground?'Not reached':'Missed')}</td></tr>`}).join('');
   const avg=m.t?m.off/m.t:0;const PT=REG==='prac'&&!m.drill?PRAC_TURNS.info[S.course]:null;
   if(PT&&V3.mode==='steer'){const ok=m.marks.every(b=>b.res&&b.res.ok);const tl=LS.get('cp.turnlast',{});tl[S.course]=(m.aground?'aground':ok?'clean':'buoy missed')+` · off line ${Math.round(avg)} m avg · rudder ${Math.round(100*m.rudT/(m.t||1))}%`;LS.set('cp.turnlast',tl)}
-  $('#v3res').innerHTML=`<h3>${m.aground?'Aground near '+esc(m.aground):PT?esc(PT.name)+' done':m.turn?esc(m.turn.name)+' practice done':m.drill==='wind'?'Crosswind practice done':m.drill?'Drill over':'Finished'}</h3><table><tr><td>Time</td><td>${fmtTime(m.t)}${m.aground?'':` (plan ${fmtTime(plan)}, ${m.t>plan?'+':'−'}${fmtTime(Math.abs(m.t-plan))})`}</td></tr>
+  $('#v3res').innerHTML=`<h3>${m.aground?'Aground near '+esc(m.aground):PT?esc(PT.name)+' done':m.turn?esc(m.turn.name)+' drill done':m.drill==='wind'?'Crosswind drill done':m.drill?'Drill over':'Finished'}</h3><table><tr><td>Time</td><td>${fmtTime(m.t)}${m.aground?'':` (plan ${fmtTime(plan)}, ${m.t>plan?'+':'−'}${fmtTime(Math.abs(m.t-plan))})`}</td></tr>
     <tr><td>Off your line</td><td>average ${Math.round(avg)} m, worst ${Math.round(m.offMax)} m</td></tr>
     <tr><td>Rudder use</td><td class="${m.rudT/m.t>.25?'bad':'ok'}">${Math.round(100*m.rudT/(m.t||1))}% of the row${m.rudT/m.t>.25?': every bit of rudder slows the crew':''}</td></tr>
     ${m.hits?`<tr><td>Blade hits</td><td class="bad">${m.hits}</td></tr>`:''}${rows}</table>
