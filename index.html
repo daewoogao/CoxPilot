@@ -66,6 +66,7 @@ ol.calls{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
 .skh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.skill h3{margin:0;font-size:16px}.skd{font-size:13px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
 .skill p{margin:6px 0;font-size:14px;line-height:1.4}.skill ul{margin:4px 0 8px;padding-left:20px;font-size:14px;line-height:1.4}.skill li{margin:3px 0}
 .pplan{margin:10px 0;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}.pplan h4{margin:0 0 6px;font-size:15px}.pplan svg{width:100%;height:auto;display:block}
+.skill.wide{grid-column:1/-1}.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:10px 0}.tcard{border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}.tcard h4{margin:0;font-size:15px}.tcard p{margin:0;font-size:13px}.tcard svg{width:100%;height:auto;background:#a9cbe6;border-radius:8px}.tcard .row{margin-top:auto}
 .pcalls{margin:8px 0 4px;padding-left:22px;font-size:13px}.pcalls li{margin:3px 0}.pcalls span{display:block;color:var(--muted)}
 .skc{display:flex;flex-direction:column;gap:4px;margin:6px 0;font-size:13px;font-style:italic;color:var(--muted);border-left:3px solid var(--accent);padding-left:8px}
 .skill .row,.qz .qos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.qz{border-bottom:1px solid var(--rule);padding:8px 0}.qz p{margin:4px 0;font-size:14px}
@@ -393,15 +394,38 @@ REGS.al.raceDay='2026-10-03';
 REGS.al.legend=[['c5k','5K Race Course'],['c3k','3K Race Course'],['chute','Start Chute'],['guide','Guide Buoy'],['sf','Start/Finish Buoy'],['turn','Turn Buoy'],['marshal','Safety Marshall']];REGS.hotl.guideTerm='Orange race buoys';REGS.hotl.raceDay='2026-11-01';Object.assign(REGS.hotl.wx,{lat:47.6475,lon:-122.3045});
 // Practice water: a plain lake of its own for the 3D drills, not tied to any regatta (Audrey, 2026-11-01).
 // The overtake lane runs 1,100 m east, then a 45° turn to port, so a cox can set up on the inside before passing.
+// practice lake turns (Audrey: turns are important, design different turns). Each is its own short lane: a lead-in, the turn, a run-out.
+// The white lane is the polyline; the orange turn line is a steady arc of radius r that passes about 10 m outside the buoy.
+const PRAC_TURNS=(()=>{const T=[
+  {k:'Bend',name:'Gentle bend',kind:'bend',r:150,pts:[[-350,0],[0,0],[346,200]]},
+  {k:'Port90',name:'Port 90° turn',kind:'90',r:60,pts:[[150,0],[500,0],[500,400]]},
+  {k:'Stbd90',name:'Starboard 90° turn',kind:'90',r:60,pts:[[500,350],[500,0],[100,0]]},
+  {k:'Port120',name:'Tight port turn',kind:'tight',r:48,pts:[[300,0],[650,0],[450,346.4]]},
+  {k:'Stbd120',name:'Tight starboard turn',kind:'tight',r:48,pts:[[475,303.1],[650,0],[250,0]]},
+  {k:'SBend',name:'S-bend',kind:'s',r:60,pts:[[-550,0],[-200,0],[0,200],[400,200]],names:['S-bend, first turn','S-bend, second turn']}];
+  const U=(a,b)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]);return[(b[0]-a[0])/d,(b[1]-a[1])/d]};
+  const courses={},smooth={},info={};
+  for(const t of T){const P=t.pts,buoys=[],arcs=[],sp=[P[0]];let len=0;
+    for(let i=1;i<P.length-1;i++){const a=U(P[i-1],P[i]),b=U(P[i],P[i+1]);const dl=Math.acos(Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1])));
+      const bis=U([0,0],[b[0]-a[0],b[1]-a[1]]);const phi=(Math.PI-dl)/2;const d=t.r*(1/Math.sin(phi)-1)+10;buoys.push([+(P[i][0]+bis[0]*d).toFixed(1),+(P[i][1]+bis[1]*d).toFixed(1)]);
+      const tl=t.r*Math.tan(dl/2),c=[P[i][0]+bis[0]*t.r/Math.sin(phi),P[i][1]+bis[1]*t.r/Math.sin(phi)];const p0=[P[i][0]-a[0]*tl,P[i][1]-a[1]*tl],p1=[P[i][0]+b[0]*tl,P[i][1]+b[1]*tl];
+      sp.push(p0);const a0=Math.atan2(p0[1]-c[1],p0[0]-c[0]),a1=Math.atan2(p1[1]-c[1],p1[0]-c[0]);let da=a1-a0;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+      const n=Math.max(4,Math.ceil(Math.abs(da)*t.r/4));for(let j=1;j<n;j++){const q=a0+da*j/n;sp.push([c[0]+Math.cos(q)*t.r,c[1]+Math.sin(q)*t.r])}sp.push(p1);
+      arcs.push({r:t.r,pre:t.r*dl/2,post:t.r*dl/2,ang:dl*180/Math.PI,bends:1})}
+    sp.push(P[P.length-1]);for(let i=1;i<P.length;i++)len+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);
+    const e=P[P.length-1],ue=U(P[P.length-2],e),s0=P[0],us=U(s0,P[1]);
+    courses[t.k]={official:len,line:P,turns:buoys,names:t.names||[t.name],finish:[[e[0]-ue[1]*30,e[1]+ue[0]*30],[e[0]+ue[1]*30,e[1]-ue[0]*30]],finishName:'END OF LANE',start:[[s0[0]-us[1]*30,s0[1]+us[0]*30],[s0[0]+us[1]*30,s0[1]-us[0]*30]],turnName:t.name};
+    smooth[t.k]={pts:sp.map(q=>[+q[0].toFixed(2),+q[1].toFixed(2)]),turns:arcs};info[t.k]=t}
+  return{courses,smooth,info,keys:T.map(t=>t.k)}})();
 REGS.prac={name:'Practice lake',place:'Practice',date:'Any day',title:'CoxPilot Practice',scale:1,origin:{lat:47.6475,lon:-122.3045},
   shore:[[-1350,-300],[-600,-310],[200,-300],[620,-200],[1000,120],[1280,480],[1300,1100],[700,1120],[380,820],[-80,330],[-500,300],[-1000,310],[-1350,300],[-1450,0]],
-  islands:[],park:null,courses:{Straight:{official:1700,line:[[-1000,0],[700,0]],turns:[],names:[],finish:[[700,30],[700,-30]],finishName:'END OF LANE'},Turn:{official:2100,line:[[-1000,0],[100,0],[807.1,707.1]],turns:[[95,38]],names:['Practice turn'],finish:[[785.9,728.3],[828.3,685.9]]}},
+  islands:[],park:null,courses:{Straight:{official:1700,line:[[-1000,0],[700,0]],turns:[],names:[],finish:[[700,30],[700,-30]],finishName:'END OF LANE'},...PRAC_TURNS.courses},
   start:[[-1000,30],[-1000,-30]],finish:[[785.9,728.3],[828.3,685.9]],guide:[],yellow:[],chute:null,marshal:[],shallow:[],warmup:null,
   labels:[['Boathouse',-1300,330,'shore'],['Red barn',-450,-330,'shore'],['Water tower',380,-290,'shore'],['Tall pines',-180,370,'shore'],['Point',1120,230,'shore'],['Flagpole',860,40,'shore']],
   docks:null,north:{rot:0},sat:null,rainier:140,wx:{id:'KBFI',name:'Boeing Field',doc:'kbfi',lat:47.6475,lon:-122.3045},channel:[],takeout:[],pencil:[],
-  boathouses:[['Club',-1250,335]],bridges:[],legend:[['lane','Practice lane']],turnStyle:'buoy',guideTerm:'Buoys',
+  boathouses:[['Club',-1250,335]],bridges:[],legend:[['lane','Practice lane']],turnStyle:'tri',guideTerm:'Buoys',
   note:'A practice lake made up for the drills, not a real regatta course.'};
-FALLBACKS.prac=FALLBACKS.hotl;
+FALLBACKS.prac=FALLBACKS.hotl;SMOOTH.prac=PRAC_TURNS.smooth;
 // Head of the Lake opens first (Audrey, 2026-10-31); a viewer's own pick is remembered. The Practice page always uses the practice lake.
 const PRACTICE=LS.get('cp.view','race')==='practice';
 const REG=PRACTICE?'prac':REGS[LS.get('cp.reg','hotl')]&&LS.get('cp.reg','hotl')!=='prac'?LS.get('cp.reg','hotl'):'hotl';
@@ -473,7 +497,7 @@ for(const k of Object.keys(D.courses)){
   const f=C.official/c[c.length-1];
   const turns=C.turns.map((b,i)=>{const pr=project(line,c,b);const cr=pr.dir[0]*(b[1]-pr.q[1])-pr.dir[1]*(b[0]-pr.q[0]);
     return{pos:b,side:cr>0?'port':'starboard',name:C.names?C.names[i]:(k==='3K'&&i>0)?'Island buoy '+i:'Turn '+(i+1),near:(k==='3K'&&i>0)?'Silcox Island':nearestLandmark(b)}});
-  COURSES[k]={key:k,line,f,turns,official:C.official,finish:C.finish||D.finish,finishName:C.finishName||'FINISH'};
+  COURSES[k]={key:k,line,f,turns,official:C.official,finish:C.finish||D.finish,finishName:C.finishName||'FINISH',start:C.start||D.start,turnName:C.turnName};
 }
 function analyze(pts,ck){
   const C=COURSES[ck];const c=cum(pts);const L=c[c.length-1];const f=C.f;
@@ -528,7 +552,7 @@ function setVB(){const z=size();vb.h=vb.w*z.h/z.w;svg.setAttribute('viewBox',`${
 const mpp=()=>vb.w/size().w;
 function fit(pts,pad=1.12){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,-p[1]);y1=Math.max(y1,-p[1])}
   const z=size();const w=Math.max((x1-x0)*pad,(y1-y0)*pad*z.w/z.h,300);vb.w=w;vb.h=w*z.h/z.w;vb.x=(x0+x1)/2-w/2;vb.y=(y0+y1)/2-vb.h/2;setVB()}
-function fitCourse(){const C=COURSES[S.course];fit([...C.line,...D.start,...C.finish,...C.turns.map(t=>t.pos)],1.18)}
+function fitCourse(){const C=COURSES[S.course];fit([...C.line,...COURSES[S.course].start,...C.finish,...C.turns.map(t=>t.pos)],1.18)}
 function toWorld(cx,cy){const r=svg.getBoundingClientRect();return[vb.x+(cx-r.left)/r.width*vb.w,-(vb.y+(cy-r.top)/r.height*vb.h)]}
 function zoomAt(f,cx,cy){const r=svg.getBoundingClientRect();if(cx==null){cx=r.left+r.width/2;cy=r.top+r.height/2}
   const fx=(cx-r.left)/r.width,fy=(cy-r.top)/r.height;const wx=vb.x+fx*vb.w,wy=vb.y+fy*vb.h;
@@ -659,8 +683,8 @@ function drawMarks(){
     an.legs.forEach((l,i)=>{const m=pointAt(an.pts,an.cum,(l.s0+l.s1)/2).p;const r=9*k;
       el('circle',{cx:m[0],cy:-m[1],r,fill:'var(--panel)',stroke:col,'stroke-width':2,'vector-effect':'non-scaling-stroke'},g);
       const t=el('text',{x:m[0],y:-m[1]+r*.38,'font-size':11*k,'text-anchor':'middle','font-weight':700,'font-family':'var(--f-body)',fill:'var(--ink)'},g);t.textContent=i+1}) }
-  for(const p of[...D.start,...C.finish])el('circle',{cx:p[0],cy:-p[1],r:6*k,fill:'var(--turn)',stroke:'var(--ink)','stroke-width':.8,'vector-effect':'non-scaling-stroke'},g);
-  for(const l of[D.start,C.finish])el('line',{x1:l[0][0],y1:-l[0][1],x2:l[1][0],y2:-l[1][1],stroke:'var(--ink)','stroke-width':1,'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke'},g);
+  for(const p of[...COURSES[S.course].start,...C.finish])el('circle',{cx:p[0],cy:-p[1],r:6*k,fill:'var(--turn)',stroke:'var(--ink)','stroke-width':.8,'vector-effect':'non-scaling-stroke'},g);
+  for(const l of[COURSES[S.course].start,C.finish])el('line',{x1:l[0][0],y1:-l[0][1],x2:l[1][0],y2:-l[1][1],stroke:'var(--ink)','stroke-width':1,'stroke-dasharray':'3 3','vector-effect':'non-scaling-stroke'},g);
   for(const p of D.marshal){el('circle',{cx:p[0],cy:-p[1],r:7*k,fill:'var(--c3k)',stroke:'var(--panel)','stroke-width':1.5,'vector-effect':'non-scaling-stroke'},g);const t=el('text',{x:p[0],y:-p[1]+3.5*k,'font-size':9*k,'text-anchor':'middle',fill:'#fff','font-weight':700,'font-family':'var(--f-body)'},g);t.textContent='M'}
   for(const p of D.shallow)tri([p[0],p[1]-6*k],'var(--c3k)',7*k).setAttribute('opacity',.8);
   if(S.showWarm&&D.warmup)for(const p of D.warmup.buoys)tri(p,'var(--turn)',6*k);
@@ -671,7 +695,7 @@ function drawMarks(){
     const t=el('text',{x:m[0]+8*k,y:-m[1]-6*k,'font-size':10*k,'text-anchor':'start','font-family':'var(--f-display)','font-weight':600,fill:'var(--ink)','paint-order':'stroke',stroke:'var(--water)','stroke-width':3*k},lg);t.textContent=br.name.toUpperCase()}
   for(const [n,x,y,kind] of D.labels){if(kind==='water'&&!S.showWarm&&n==='Warm Up Area')continue;
     const t=el('text',{x,y:-y,'font-size':(kind==='island'?12:13)*k,'text-anchor':'middle','font-family':'var(--f-display)','font-weight':600,'letter-spacing':'.04em',fill:kind==='water'?'var(--c3k)':'var(--muted)','paint-order':'stroke',stroke:kind==='water'?'var(--water)':'var(--land)','stroke-width':3*k},lg);t.textContent=n.toUpperCase()}
-  for(const [n,l,dy] of[['START',D.start,-1],[C.finishName,C.finish,1]]){const m=[(l[0][0]+l[1][0])/2,(l[0][1]+l[1][1])/2];
+  for(const [n,l,dy] of[['START',COURSES[S.course].start,-1],[C.finishName,C.finish,1]]){const m=[(l[0][0]+l[1][0])/2,(l[0][1]+l[1][1])/2];
     const t=el('text',{x:m[0]+(n==='START'?-34*k:30*k),y:-m[1]+4*k,'font-size':12*k,'text-anchor':'middle','font-family':'var(--f-display)','font-weight':700,fill:'var(--ink)','paint-order':'stroke',stroke:'var(--water)','stroke-width':3*k},lg);t.textContent=n}
   drawHazards();drawCallNums();drawWind();drawHandles();drawBoat();
 }
@@ -913,7 +937,7 @@ function selectLeg(i){const an=currentAnalysis();const l=an.legs[i];S.leg=i;S.po
   drawCourses();document.querySelectorAll('.leg').forEach((e,k)=>e.classList.toggle('on',k===i));updatePlayer()}
 
 function exampleRoute(ck){const sm=(SMOOTH[REG]||{})[ck];
-  if(sm)return{id:'smooth-'+ck,name:'Shortest smooth line',course:ck,pts:sm.pts,example:true,smooth:true};
+  if(sm)return{id:'smooth-'+ck,name:REG==='prac'?'Turn line':'Shortest smooth line',course:ck,pts:sm.pts,example:true,smooth:true};
   // tighter line: pull the waypoint nearest each turn buoy in to ~10 m off
   const C=COURSES[ck];let pts=dp(C.line,25/1).map(p=>p.slice());
   for(const t of C.turns){let bi=1,bd=1e9;for(let i=1;i<pts.length-1;i++){const d=dist(pts[i],t.pos);if(d<bd){bd=d;bi=i}}
@@ -972,7 +996,7 @@ async function deleteRoute(id){const r=S.routes.find(x=>x.id===id);if(!r)return;
   refresh()}
 let srcRoutes={db:[],local:[]};
 function toTN(r){if(r.frame==='tn'||!r.pts)return r;const a=(D.north?D.north.rot:0)*Math.PI/180,c=Math.cos(a),n=Math.sin(a);return{...r,frame:'tn',pts:r.pts.map(([x,y])=>[x*c-y*n,x*n+y*c])}}
-function mergeRoutes(list,src){list=list.map(toTN);srcRoutes[src]=list;S.routes=[...(REG==='prac'?[]:Object.keys(COURSES).map(exampleRoute)),...srcRoutes.db,...srcRoutes.local].sort((a,b)=>(a.example?0:1)-(b.example?0:1))}
+function mergeRoutes(list,src){list=list.map(toTN);srcRoutes[src]=list;S.routes=[...(REG==='prac'?Object.keys(COURSES).filter(k=>SMOOTH.prac[k]).map(exampleRoute):Object.keys(COURSES).map(exampleRoute)),...srcRoutes.db,...srcRoutes.local].sort((a,b)=>(a.example?0:1)-(b.example?0:1))}
 function alertNote(t){const n=document.createElement('p');n.className='note';n.style.color='var(--bad)';n.textContent=t;$('#p-routes').prepend(n)}
 
 function renderWeather(){
@@ -1087,7 +1111,7 @@ const hdg=b=>String(Math.round(b)%360).padStart(3,'0')+'°';
 let CALLS_USER=[];
 const callKey=()=>REG+'_'+S.course;
 function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,title,text,say)=>{const s=Math.max(0,Math.min(L,m/f));out.push({s,kind,title,text,say:say||title})};
-  const opt=LS.get('cp.callopt',{marks:true,moves:true});const l0=an.legs[0];
+  const opt=REG==='prac'?{marks:false,moves:false}:LS.get('cp.callopt',{marks:true,moves:true});const l0=an.legs[0];
   add(0,'start','Start',`Rolling start: be at full race pace before the line. Heading ${hdg(l0.bearing)}. Point: ${pointOfAim(an,l0)}.`,'Start. Full pressure, hold your point');
   // landmarks and bridges as you come level with them
   for(const lab of D.labels){if(lab[3]==='water'||lab[3]==='hazard')continue;const o=sideOf(an,[lab[1],lab[2]]);
@@ -1271,15 +1295,15 @@ const DRILLNAME={pass:'Overtake a slower crew',yield:'Let a faster crew pass',wi
 const SKILLS=[
  {id:'pass',title:'Overtaking a slower crew',drill:'pass',
   why:'Head races start crews 10 to 20 seconds apart, so you will catch boats. A clean pass is the biggest chunk of time a cox can win or lose.',
-  how:['Set up early: get your bow ball to the inside of the next turn before you overlap, so you pass on the inside.','Close up, then call it when you are about a length of open water away. A call from 4 or 5 lengths back gets ignored.','Call once, loud and clear, with their bow number and the side: “Bow 214, yield to starboard!”','You have right of way and choose the side, but only if the pass is safe. Pick a side with water for both boats; never squeeze them into the bank, a buoy or a bridge pier.','Give them time to move. If they can’t or don’t, don’t press it: wait or go wider. A collision you cause can disqualify you.','Once you overlap, be quick: a power ten to walk through, then a length clear before you come back to your line.','No passing in narrow water or under a bridge. Check each regatta’s no-passing zones.'],
+  how:['Set up early: get your bow ball to the inside of the next turn before you overlap, so you pass on the inside.','Close up, then call it when you are about a length of open water away. A call from 4 or 5 lengths back gets ignored.','Call once, loud and clear, with their bow number and the side: “Bow 214, yield to starboard!”','You have right of way and choose the side, but only if the pass is safe. Pick a side with water for both boats; never squeeze them into the bank, a buoy or a bridge pier.','Give them time to move. If they can’t or don’t, don’t press it: wait or go wider. A collision you cause can disqualify you.','Once you overlap, be quick: a power ten to walk through, then a length clear before you come back to your line.','Avoid passing in narrow water or under a bridge, and check each regatta’s no-passing zones (Head of the Lake has them only in the warm-up area).'],
   calls:['“Bow 214, yield to starboard!”','“We’re on them, power ten to walk through!”','“Seat… seat… we’re past their stroke!”']},
  {id:'yield',title:'Being overtaken (yielding)',drill:'yield',
-  why:'Failing to yield costs 60 seconds at most head races, and a clash costs more. Yielding well loses you almost nothing.',
+  why:'Failing to yield brings a penalty: 60 seconds at some head races, disqualification at Head of the Lake. A clash costs more. Yielding well loses you almost nothing.',
   how:['Look behind at landmarks so you know who is coming before they call.','When they are within a length of open water, they are overtaking you. You must yield, and start moving before their bow reaches half a length of open water from your stern.','Move to the side they ask for, usually the outside of the next turn, with small steady rudder while the crew keeps rowing.','Never stop or hold water on the course: some regattas exclude a crew for it.','Once they are through, come back to your line.'],
   calls:['“Crew coming on port, we’re moving to starboard, stay long!”','“They’re through, back to our line, stay with it!”']},
  {id:'turns',title:'Turns and buoy lines',turn:true,
   why:'Most head race time is lost at turns: swinging wide, oversteering, or a buoy on the wrong side (often 10 seconds a buoy).',
-  how:['Know which side every buoy stays on before race day (Preview in Race).','Start the turn early with a steady arc and ask for pressure on the outside so the crew helps turn the boat.','Let the rudder off gradually as you come out on the new heading.','The hull must stay inside the buoy line; blades may cross it.'],
+  how:['Know which side every buoy stays on before race day (Preview in Race).','Start the turn early with a steady arc and ask for pressure on the outside so the crew helps turn the boat.','Let the rudder off gradually as you come out on the new heading.','At many regattas the hull must stay inside the buoy line while blades may cross it. Check the rules: some disqualify any crossing.'],
   calls:['“Turn in 5, more pressure on starboard!”','“Easing into it… holding the arc… letting the rudder off.”']},
  {id:'bridges',title:'Bridges and arches',course:true,
   why:'You must hit the racing arch, bridges make great checkpoints, and two boats under one arch is dangerous.',
@@ -1314,7 +1338,7 @@ const QUIZ=[
  {q:'Which side should you overtake on before a turn?',o:['The outside, there is more water','The inside, set up early','Either, it makes no difference'],a:1,why:'Passing on the outside of a turn leaves the slower crew nowhere to go and costs you distance.'},
  {q:'How much rudder on a straight leg?',o:['As little as possible, small early corrections','Big corrections so the crew feels it','Full rudder whenever you are a metre off'],a:0,why:'Every bit of rudder slows the boat.'},
  {q:'The crew ahead cannot move over: there is no room. What do you do?',o:['Keep calling and push into their blades','Ease off for a few strokes or pass on the other side','Stop rowing and protest at the finish'],a:1,why:'A few easy strokes cost far less than a clash or a penalty.'},
-  {q:'Can your blades cross the buoy line?',o:['No, nothing may cross it','Yes, as long as the hull stays inside','Only on the straights'],a:1,why:'At most head races the hull must stay inside the buoys; blades may cross.'},
+  {q:'Can your blades cross the buoy line?',o:['No, nothing may cross it','Yes, as long as the hull stays inside','Only on the straights'],a:1,why:'At many head races the hull must stay inside the buoys and blades may cross. Some courses are stricter, so check the rules.'},
  {q:'A pass would put both boats into one bridge arch. What do you do?',o:['Go for it with a power ten','Wait and finish the pass after the bridge','Ask them to stop rowing'],a:1,why:'Two boats in one arch is dangerous. Finish the pass in open water.'},
  {q:'The crew behind calls “Yield!” but you are 5 strokes from a turn buoy. What do you do?',o:['Stop rowing to let them by','Hold your line round the buoy, then move over in open water','Cut inside the buoy to make room'],a:1,why:'Yield as soon as it is safe. Never stop, and never cut a buoy.'},
  {q:'What does a referee usually penalise in a pass?',o:['Only the slower crew','Only the faster crew','Either: failing to yield, or not giving time to yield'],a:2,why:'Both crews have a job: the slower crew yields safely, the faster crew gives them time to.'}
@@ -1334,13 +1358,30 @@ function passCard(){const P=passPlan({len:1,raw:1}),L=BOATL,M=P.b1+40,W=640,H=15
     <text x="${x(0)}" y="16" font-size="11" fill="#5b6875">Rowing this way →</text><text x="${x(M)}" y="16" font-size="11" text-anchor="end" fill="#5b6875">about ${Math.round(P.b1/10)*10} m, not to scale</text></svg>
     <ol class="pcalls">${P.pc.map(c=>`<li><b>${esc(c.t)}</b><span>${esc(c.when)}</span></li>`).join('')}</ol>
     <p class="sub">They row about ${Math.round((1-PASS.k)*100)}% slower than you, so the pass takes roughly ${Math.round(P.pc[6].m/10)*10} m. A power ten at the overlap shortens it. Port is to your left as you sit facing the bow. The yellow zone in 3D marks one length of open water behind them: that is when to call.</p><p class="sub"><b>The rule (Head of the Lake):</b> the overtaking crew has right of way on the side of its choice, if the pass is safe. The crew being overtaken must yield, and must start moving by the time you are half a length of open water behind them. You must give them time and room to move and stay on the course. If they can’t move, don’t force it: wait or go wider. Either crew can be penalised.</p></div>`}
+// Practice page: one card per practice-lake turn, with a small plan, how to steer it and buttons to watch or steer it in 3D
+function turnCards(){const last=LS.get('cp.turnlast',{});return`<div class="tgrid">${PRAC_TURNS.keys.map(k=>{const t=PRAC_TURNS.info[k],C=PRAC_TURNS.courses[k],sm=PRAC_TURNS.smooth[k];
+  const all=[...C.line,...C.turns,...sm.pts];let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const p of all){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}
+  const pad=40,w=Math.max(x1-x0,(y1-y0)*1.6)+2*pad,h=w/1.6,cx=(x0+x1)/2,cy=(y0+y1)/2;const P=q=>`${q[0].toFixed(1)},${(-q[1]).toFixed(1)}`;const sc=w/240;
+  const lane=`<polyline points="${C.line.map(P).join(' ')}" fill="none" stroke="#fff" stroke-width="${2.2*sc}" stroke-dasharray="${7*sc} ${5*sc}"/>`;
+  const tl=`<polyline points="${sm.pts.map(P).join(' ')}" fill="none" stroke="#f07a2a" stroke-width="${3.2*sc}" stroke-linecap="round"/>`;
+  const by=C.turns.map(b=>`<path d="M${b[0]},${-b[1]-6*sc}L${b[0]+5.5*sc},${-b[1]+4*sc}L${b[0]-5.5*sc},${-b[1]+4*sc}Z" fill="#f6d827" stroke="#222" stroke-width="${.8*sc}"/>`).join('');
+  const s0=C.line[0],s1=C.line[1],d=Math.hypot(s1[0]-s0[0],s1[1]-s0[1]),u=[(s1[0]-s0[0])/d,(s1[1]-s0[1])/d],q=[s0[0]+u[0]*60,s0[1]+u[1]*60];
+  const boat=`<g transform="translate(${P(q)}) rotate(${(Math.atan2(u[0],u[1])*180/Math.PI).toFixed(1)}) scale(${sc*1.1})"><path d="M0,-9 L5.5,7 L0,4 L-5.5,7Z" fill="#7b1e34" stroke="#e0b12a" stroke-width="1.6"/></g>`;
+  const res=last[k]?`<span class="sub">Last try: ${esc(last[k])}</span>`:'';
+  return`<div class="tcard"><h4>${esc(t.name)}</h4><svg viewBox="${cx-w/2} ${-cy-h/2} ${w} ${h}" role="img" aria-label="${esc(t.name)} plan">${lane}${tl}${by}${boat}</svg><p>${turnTip(t,sm)}</p>${res}<div class="row"><button class="btn" data-pturnw="${k}">▶ Watch it first</button><button class="btn primary" data-pturn="${k}">Steer it in 3D</button></div></div>`}).join('')}</div>
+  <p class="sub">White dashed: the lane. Orange: the turn line to steer, a steady arc about 10 m outside the yellow buoy.</p>`}
+function turnTip(t,sm){const a=sm.turns[0],deg=Math.round(a.ang),st=Math.max(1,strokes(a.pre,0));const P=t.pts,cr=(P[1][0]-P[0][0])*(P[2][1]-P[1][1])-(P[1][1]-P[0][1])*(P[2][0]-P[1][0]);const dir=cr>0?'port':'starboard',out=cr>0?'starboard':'port';
+  if(t.kind==='bend')return`A slight ${deg}° bend to ${dir}. Hold a small, steady rudder through the whole bend instead of one big late correction, and pick your new point of aim before you start.`;
+  if(t.kind==='90')return`A ${deg}° turn to ${dir}, buoy on your ${dir}. Call it early (“Turn in 5”), start easing the rudder on about ${st} strokes before the buoy, ask for more pressure on ${out}, hold a steady ${t.r} m arc, then let the rudder off as the new point comes onto your bow.`;
+  if(t.kind==='tight')return`A tight ${deg}° turn to ${dir}. It needs nearly full rudder and strong ${out} pressure, started about ${st} strokes before the buoy. Start late and you swing wide; cut it and you hit the buoy.`;
+  return`Two turns close together, ${deg}° to port then to starboard. Don’t let the rudder off fully between them: come out of the first already setting up for the second, and switch the pressure call to the other side.`}
 function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const done=LS.get('cp.skilldone',{}),last=LS.get('cp.drilllast',{});const qs=QUIZ;const qa=S.quiz||(S.quiz={});
   el.innerHTML=`<h2>Practice</h2><p class="lead">The race skills every cox needs, for any regatta. Read each one, row the drills in 3D, and tick it once you have practised it.</p>
   <div class="pwater"><span class="sub">The 3D drills row on a practice lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills practised.</span></div>
-  <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Practised</label></div>
+  <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}${k.turn?' wide':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Practised</label></div>
     <p>${esc(k.why)}</p><ul>${k.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>
     ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}${k.id==='pass'?passCard():''}
-    <div class="row">${k.drill?`<button class="btn" data-watch="${k.drill}">▶ Watch it first</button><button class="btn primary" data-drill="${k.drill}">${DRILLNAME[k.drill]} in 3D</button>`:''}${k.turn?'<button class="btn primary" data-pturn="1">Practise a turn in 3D</button>':''}${k.course?'<button class="btn primary" data-pcourse="1">Steer a course in 3D</button>':''}${k.tab?`<button class="btn" data-ptab="${k.tab}">Open ${k.tab==='calls'?'Calls':'Replay'} in Race</button>`:''}${k.quiz?'<button class="btn" data-pquiz="1">Take the quiz</button>':''}</div>
+    <div class="row">${k.drill?`<button class="btn" data-watch="${k.drill}">▶ Watch it first</button><button class="btn primary" data-drill="${k.drill}">${DRILLNAME[k.drill]} in 3D</button>`:''}${k.turn?turnCards():''}${k.course?'<button class="btn primary" data-pcourse="1">Steer a course in 3D</button>':''}${k.tab?`<button class="btn" data-ptab="${k.tab}">Open ${k.tab==='calls'?'Calls':'Replay'} in Race</button>`:''}${k.quiz?'<button class="btn" data-pquiz="1">Take the quiz</button>':''}</div>
     ${k.drill&&last[k.drill]?`<p class="sub">Last try: ${esc(last[k.drill])}</p>`:''}</div>`).join('')}</div>
   <h2 id="pquiz">Rules quiz</h2><div class="qzs">${qs.map((q,i)=>{const a=qa[i];return`<div class="qz"><p><b>${i+1}.</b> ${esc(q.q)}</p><div class="qos">${q.o.map((o,j)=>`<button class="btn qo${a!=null?(j===q.a?' right':j===a?' wrong':''):''}" data-q="${i}" data-o="${j}"${a!=null?' disabled':''}>${esc(o)}</button>`).join('')}</div>${a!=null?`<p class="sub">${a===q.a?'✓ Right.':'✗ Not quite.'} ${esc(q.why)}</p>`:''}</div>`}).join('')}
   <p class="sub">${Object.keys(qa).length} of ${qs.length} answered, ${qs.filter((q,i)=>qa[i]===q.a).length} right. <button class="lnk" id="qreset">Start again</button></p></div>
@@ -1348,7 +1389,7 @@ function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const
   el.querySelectorAll('[data-skd]').forEach(c=>c.onchange=()=>{const d=LS.get('cp.skilldone',{});if(c.checked)d[c.dataset.skd]=1;else delete d[c.dataset.skd];LS.set('cp.skilldone',d);keepScroll(renderPractice)});
   el.querySelectorAll('[data-drill]').forEach(b=>b.onclick=()=>startPractice({drill:b.dataset.drill}));
   el.querySelectorAll('[data-watch]').forEach(b=>b.onclick=()=>startPractice({drill:b.dataset.watch,mode:'ride'}));
-  el.querySelectorAll('[data-pturn]').forEach(b=>b.onclick=()=>startPractice({from:0}));
+  el.querySelectorAll('[data-pturn]').forEach(b=>b.onclick=()=>startPractice({turn:b.dataset.pturn}));el.querySelectorAll('[data-pturnw]').forEach(b=>b.onclick=()=>startPractice({turn:b.dataset.pturnw,mode:'ride'}));
   el.querySelectorAll('[data-pcourse]').forEach(b=>b.onclick=()=>startPractice({from:-1}));
   el.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{LS.set('cp.tab',b.dataset.ptab);setView('race')});
   el.querySelectorAll('[data-pquiz]').forEach(b=>b.onclick=()=>$('#pquiz').scrollIntoView({behavior:'smooth'}));
@@ -1361,8 +1402,8 @@ function setView(v){if((v==='practice')!==PRACTICE){LS.set('cp.view',v);location
   $('#regname').textContent=v==='practice'?'Practice · skills for any race':D.name+' · '+D.date;
   if(v==='practice')renderPractice();else setTimeout(()=>{if(typeof setVB==='function')setVB()},60)}
 // on the practice lake the drills row on the straight lane, turn practice on the lane with the turn
-function pracCourse(turn){if(REG!=='prac')return;const k=turn?'Turn':'Straight';if(S.course!==k&&COURSES[k])setCourse(k)}
-function startPractice(o){pracCourse(o.from!=null&&o.from>=0);V3.mode=o.mode||'steer';LS.set('cp.v3mode',V3.mode);V3.drill=o.drill||null;V3.from=o.from!=null?o.from:-1;V3._key=null;open3()}
+function pracCourse(turn){if(REG!=='prac')return;const k=turn?(typeof turn==='string'?turn:LS.get('cp.pturn','Port90')):'Straight';if(!COURSES[k])return;if(S.course!==k)setCourse(k);S.activeRoute=SMOOTH.prac[k]?'smooth-'+k:'marked'}
+function startPractice(o){if(o.turn)LS.set('cp.pturn',o.turn);pracCourse(o.turn||(o.from!=null&&o.from>=0));V3.mode=o.mode||'steer';LS.set('cp.v3mode',V3.mode);V3.drill=o.drill||null;V3.from=o.from!=null?o.from:-1;V3._key=null;open3()}
 
 /* drills in 3D: a second crew on the course to pass, or to let through, and a crosswind */
 const BOATL=17.5; // an eight, stern (cox) to bow
@@ -1626,7 +1667,7 @@ function build3(){
   // as the official map key: orange round = guide buoy, yellow round = start/finish buoy, yellow triangle = turn buoy
   D.guide.forEach(p=>buoy(p,0xf07a2a,.55));(D.yellow||[]).forEach(p=>buoy(p,0xf6d827,.55));
   const sf=(p,label)=>{const b=buoy(p,0xf6d827,.75);if(label){const s=textSprite(label,{size:.036,maxD:2500});s.position.copy(W3(p[0],p[1],5));fixed.add(s);b.userData.lab=s}};
-  sf(D.start[0],'Start');sf(D.start[1]);sf(D.finish[0],'Finish');sf(D.finish[1]);for(const C of Object.values(COURSES))if(C.finish!==D.finish){sf(C.finish[0],C.finishName==='FINISH'?'Finish':C.finishName);sf(C.finish[1])}
+  if(REG!=='prac'){sf(D.start[0],'Start');sf(D.start[1]);sf(D.finish[0],'Finish');sf(D.finish[1])}if(REG!=='prac')for(const C of Object.values(COURSES))if(C.finish!==D.finish){sf(C.finish[0],C.finishName==='FINISH'?'Finish':C.finishName);sf(C.finish[1])}
   for(const c of D.channel||[]){const m=new THREE.Mesh(new THREE.OctahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:c.c==='red'?0xd8322a:0x2e8b4a,flatShading:true}));m.scale.set(.8,1.6,.8);m.position.copy(W3(c.p[0],c.p[1],1.2));m.userData.h=2.8;m.userData.r=.8;fixed.add(m);V3.buoys.push(m)}
   for(const p of D.pencil||[]){const m=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,3,10),new THREE.MeshLambertMaterial({color:0xf6d827}));m.position.copy(W3(p[0],p[1],1.4));m.userData.h=3;m.userData.r=.35;fixed.add(m);V3.buoys.push(m)}
   for(const [n,x,y] of D.boathouses||[]){const s=textSprite(n,{size:.03,maxD:2500,bg:'rgba(44,47,138,.88)'});s.position.copy(W3(x,y,10));fixed.add(s)}
@@ -1704,7 +1745,7 @@ function size3(){if(!V3.r)return;const h=$('#v3c');const w=h.clientWidth||1,ht=h
 
 // live map inset: north-up course map with the boat's position and the leg it is on
 function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v3mini');
-  const pts=[...an.pts,...D.start,...COURSES[S.course].finish];let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}
+  const pts=[...an.pts,...COURSES[S.course].start,...COURSES[S.course].finish];let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}
   const cw=box.clientWidth||320,ch=box.clientHeight||200;let w=(x1-x0)*1.16+120,h=(y1-y0)*1.16+120;
   // in a drill with another crew the live map follows the two boats closely so both are easy to see
   V3.miniZoom=!!(V3.sim&&V3.sim.ai);if(V3.miniZoom){w=box.classList.contains('big')?420:240;h=w*ch/cw}
@@ -1720,7 +1761,7 @@ function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v
     if(L<need){const m=[(sg[0][0]+sg[sg.length-1][0])/2,(sg[0][1]+sg[sg.length-1][1])/2],u=[(sg[sg.length-1][0]-sg[0][0])/L,(sg[sg.length-1][1]-sg[0][1])/L];sg=[[m[0]-u[0]*need/2,m[1]-u[1]*need/2],[m[0]+u[0]*need/2,m[1]+u[1]*need/2]]}
     mk('path',{d:pathD(sg),fill:'none',stroke:'#fff','stroke-width':8*k,'stroke-linecap':'butt'});mk('path',{d:pathD(sg),fill:'none',stroke:'#222','stroke-width':5*k,'stroke-linecap':'butt'})}
   const rc=cssCol(activeColorVar());V3.miniCol=rc;
-  const dO=drillOnly();if(dO)mk('path',{d:pathD(an.pts),fill:'none',stroke:'#fff','stroke-width':2.2*k,'stroke-dasharray':`${6*k} ${4*k}`});else if(!(V3.plan&&V3.sim))mk('path',{d:pathD(an.pts),fill:'none',stroke:rc,'stroke-width':2*k,opacity:.55,'stroke-dasharray':`${5*k} ${4*k}`});
+  const dO=drillOnly();if(dO){mk('path',{d:pathD(COURSES[S.course].line),fill:'none',stroke:'#fff','stroke-width':2.2*k,'stroke-dasharray':`${6*k} ${4*k}`});if(an.pts!==COURSES[S.course].line)mk('path',{d:pathD(an.pts),fill:'none',stroke:'#f07a2a','stroke-width':3*k,'stroke-linecap':'round'})}else if(!(V3.plan&&V3.sim))mk('path',{d:pathD(an.pts),fill:'none',stroke:rc,'stroke-width':2*k,opacity:.55,'stroke-dasharray':`${5*k} ${4*k}`});
   V3.miniLeg=mk('path',{d:'',style:dO?'display:none':'',fill:'none',stroke:rc,'stroke-width':4.5*k,'stroke-linecap':'round','stroke-linejoin':'round'});V3.miniLi=-1;
   // only a few buoys fit at this size: every turn and channel buoy always, then race buoys that are not crowded by another
   const kept=an.turns.map(t=>t.pos),room=p=>kept.every(q=>dist(p,q)>16*k);
@@ -1735,7 +1776,7 @@ function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v
       const near=V3.miniBr.some(b=>b!==V3.miniBr[V3.miniBr.length-1]&&b.p&&dist(b.p,best.p)<60*k);V3.miniBr[V3.miniBr.length-1].p=best.p;
       brLab.push([best.p[0]+6*k,-best.p[1]+(near?16:-6)*k,nm])}}
   V3.miniBr.sort((a,b)=>a.s-b.s);
-  for(const l of[D.start,COURSES[S.course].finish])mk('line',{x1:l[0][0],y1:-l[0][1],x2:l[1][0],y2:-l[1][1],stroke:'#222','stroke-width':2*k});
+  for(const l of[COURSES[S.course].start,COURSES[S.course].finish])mk('line',{x1:l[0][0],y1:-l[0][1],x2:l[1][0],y2:-l[1][1],stroke:'#222','stroke-width':2*k});
   if(!dO)an.legs.forEach((l,i)=>{const m=pointAt(an.pts,an.cum,(l.s0+l.s1)/2).p;mk('circle',{cx:m[0],cy:-m[1],r:7*k,fill:'#fff',stroke:rc,'stroke-width':1.5*k});const t=mk('text',{x:m[0],y:-m[1]+3.3*k,'font-size':9*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#222'});t.textContent=i+1});
   for(const [x,y,nm] of brLab){const t=mk('text',{x,y,'font-size':9*k,'font-weight':700,'font-family':'sans-serif',fill:'#111',stroke:'#fff','stroke-width':2.5*k,'paint-order':'stroke'});t.textContent=nm}
   if(V3.plan&&V3.sim){const pp=passPts(an,V3.sim.s0);V3.miniLeg.style.display='none';mk('path',{d:pathD(pp),fill:'none',stroke:dO?'#f07a2a':rc,'stroke-width':3*k,'stroke-linecap':'round'});
@@ -1750,13 +1791,13 @@ function mini3(an,P,li,s){if(!V3.mini||!V3.miniBoat)return;const k=V3.miniK;cons
       if(V3.miniZoom&&V3.miniWH){const [w,h]=V3.miniWH;const r0=P.h*Math.PI/180,cx=(P.x+ax)/2+Math.sin(r0)*20,cy=(P.y+ay)/2+Math.cos(r0)*20;$('#v3minisvg').setAttribute('viewBox',`${(cx-w/2).toFixed(1)} ${(-cy-h/2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`)}}}
   {const r=P.h*Math.PI/180,c=V3.miniZoom?BOATL/2:0;V3.miniBoat.setAttribute('transform',`translate(${(P.x+Math.sin(r)*c).toFixed(1)},${(-(P.y+Math.cos(r)*c)).toFixed(1)}) rotate(${P.h.toFixed(1)}) scale(${bs.toFixed(3)})`)}
   const l=an.legs[li];if(V3.miniLi!==li){V3.miniLi=li;const seg=[];for(let q=l.s0;q<=l.s1;q+=6)seg.push(pointAt(an.pts,an.cum,q).p);seg.push(pointAt(an.pts,an.cum,l.s1).p);V3.miniLeg.setAttribute('d',pathD(seg))}
-  const f=an.len/an.raw;const left=Math.max(0,(l.s1-s)*f);const e=$('#v3minil');const nb=(V3.miniBr||[]).find(b=>b.s>s);const bd=nb?(nb.s-s)*f:1e9;const txt=drillOnly()?`Drill lane · ${fmtM(left)} to the end`:`Leg ${li+1} of ${an.legs.length} · to ${l.to} · ${fmtM(left)}`+(bd<=600?` · ${bridgeShort(nb.name)} bridge in ${fmtM(Math.round(bd/10)*10)}`:'');if(e.textContent!==txt)e.textContent=txt}
+  const f=an.len/an.raw;const left=Math.max(0,(l.s1-s)*f);const e=$('#v3minil');const nb=(V3.miniBr||[]).find(b=>b.s>s);const bd=nb?(nb.s-s)*f:1e9;const txt=drillOnly()?`${onLane()?'Drill lane':'Turn line'} · ${fmtM(Math.max(0,(an.raw-s)*f))} to the end`:`Leg ${li+1} of ${an.legs.length} · to ${l.to} · ${fmtM(left)}`+(bd<=600?` · ${bridgeShort(nb.name)} bridge in ${fmtM(Math.round(bd/10)*10)}`:'');if(e.textContent!==txt)e.textContent=txt}
 const bridges3=()=>(D.bridges||[]).filter(b=>!b.fwy);
 const bridgeShort=n=>n.replace(/ Ship Canal/,'').replace(/ Bridge$/,'');
 // a drill on the practice lake shows only the drill lane (white) and, when passing, the passing line (orange): no course or routes
-const drillOnly=()=>REG==='prac'&&!!V3.drill;const DLANE=0xffffff,DPASS=0xf07a2a;
-function drillView3(){const d=drillOnly();if(V3.dv===d)return;V3.dv=d;const rp=$('#v3rpick'),oo=$('#v3othon');if(rp)rp.hidden=d;if(oo)oo.parentElement.hidden=d;
-  if(V3.lineObj)V3.lineObj.material.color.set(d?DLANE:V3.lineCol);const e=$('#v3route');if(e)e.innerHTML=d?`<i style="background:#fff;border:1px solid #888"></i>Drill lane`:`<i style="background:#${V3.lineCol.getHexString()}"></i>${esc(activeRouteName())}`}
+const drillOnly=()=>REG==='prac';const onLane=()=>currentAnalysis().pts===COURSES[S.course].line;const DLANE=0xffffff,DPASS=0xf07a2a;
+function drillView3(){const d=drillOnly(),ln=d&&onLane(),key=d+'|'+ln+'|'+S.course;if(V3.dv===key)return;V3.dv=key;const rp=$('#v3rpick'),oo=$('#v3othon');if(rp)rp.hidden=d;if(oo)oo.parentElement.hidden=d;
+  if(V3.lineObj)V3.lineObj.material.color.set(d?(ln?DLANE:DPASS):V3.lineCol);const e=$('#v3route');if(e)e.innerHTML=d?(ln?`<i style="background:#fff;border:1px solid #888"></i>Drill lane`:`<i style="background:#f07a2a"></i>Turn line · ${esc(COURSES[S.course].turnName||'')}`):`<i style="background:#${V3.lineCol.getHexString()}"></i>${esc(activeRouteName())}`}
 function otherRoutes3(){const out=[];if(drillOnly())return out;if(S.activeRoute!=='marked'||S.editing)out.push({name:'Marked course',pts:COURSES[S.course].line,cv:courseVar(S.course)});
   for(const r of visibleRoutes())if(r.id!==S.activeRoute&&!(S.editing&&S.editing.id===r.id))out.push({name:r.name,pts:r.pts,cv:routeColVar(r)});return out}
 function buildCourse3(){
@@ -1770,6 +1811,8 @@ function buildCourse3(){
     let dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy)||1;rib.push([q.p[0],q.p[1],dx/L,dy/L]);if(k)idx.push(2*k-2,2*k-1,2*k,2*k-1,2*k+1,2*k);k++}
   const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(rib.length*6),3));rg.setIndex(idx);V3.rib=rib;
   const line=new THREE.Mesh(rg,new THREE.MeshBasicMaterial({color:lc,side:THREE.DoubleSide,transparent:true,opacity:.9,polygonOffset:true,polygonOffsetFactor:-2}));g.add(line);V3.lineObj=line;
+  V3.laneObj=null;if(REG==='prac'&&an.pts!==COURSES[S.course].line){const L=COURSES[S.course].line,v=[],ix=[];let n=0;for(let i=0;i<L.length-1;i++){const a=L[i],b=L[i+1],d=Math.hypot(b[0]-a[0],b[1]-a[1]),dx=(b[0]-a[0])/d,dy=(b[1]-a[1])/d;for(let u=0;u<d;u+=9){const e=Math.min(d,u+5),w=.3;const p0=[a[0]+dx*u,a[1]+dy*u],p1=[a[0]+dx*e,a[1]+dy*e];v.push(p0[0]-dy*w,.29,-(p0[1]+dx*w),p0[0]+dy*w,.29,-(p0[1]-dx*w),p1[0]-dy*w,.29,-(p1[1]+dx*w),p1[0]+dy*w,.29,-(p1[1]-dx*w));ix.push(4*n,4*n+1,4*n+2,4*n+1,4*n+3,4*n+2);n++}}
+    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(v,3));lg.setIndex(ix);V3.laneObj=new THREE.Mesh(lg,new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,transparent:true,opacity:.85,polygonOffset:true,polygonOffsetFactor:-1}));g.add(V3.laneObj)}
   const hex='#'+lc.getHexString();
   an.legs.forEach((l,i)=>{const p=pointAt(an.pts,an.cum,l.s0+Math.min(60,(l.s1-l.s0)/2)).p;const s=textSprite('Leg '+(i+1)+' · '+String(Math.round(l.bearing)).padStart(3,'0')+'°',{size:.03,maxD:900,bg:'#1f5fbf',fg:'#fff'});s.userData.leg=true;s.position.copy(W3(p[0],p[1],3));g.add(s)});
   line.visible=V3.line;
@@ -1782,6 +1825,7 @@ function buildCourse3(){
     g.add(new THREE.Mesh(og,new THREE.MeshBasicMaterial({color:oc,side:THREE.DoubleSide,transparent:true,opacity:.6,polygonOffset:true,polygonOffsetFactor:-1})));
     const m=pointAt(o.pts,oc2,L*.3).p;const s=textSprite(o.name,{size:.028,maxD:1500,bg:'#'+oc.getHexString(),fg:'#fff'});s.position.copy(W3(m[0],m[1],3));g.add(s)}
   V3.buoys=V3.buoys.filter(b=>b.parent!==g);
+  if(REG==='prac'){const C=COURSES[S.course];for(const p of[...C.start,...C.finish]){const m=new THREE.Mesh(new THREE.SphereGeometry(.75,16,10),new THREE.MeshLambertMaterial({color:0xf6d827}));m.position.copy(W3(p[0],p[1],.34));m.userData.h=1.5;m.userData.r=.75;g.add(m);V3.buoys.push(m)}}
   for(const t of COURSES[S.course].turns){let tb;if(D.turnStyle==='buoy'){tb=new THREE.Group();tb.position.copy(W3(t.pos[0],t.pos[1]));tb.userData.h=1.1}else tb=triBuoy(t.pos);g.add(tb);V3.buoys.push(tb);
     const s=textSprite(`${t.name} · keep to ${t.side}`,{size:.034,maxD:2500,bg:'rgba(31,95,191,.92)',fg:'#fff'});s.position.copy(W3(t.pos[0],t.pos[1],5));g.add(s);tb.userData.lab=s}
 }
@@ -1798,7 +1842,7 @@ function resetSim(){V3._said=null;_flash=null;V3.centre=false;const an=currentAn
   const DR=V3.drill?drillSpot(an):null;
   const T=DR?null:V3.from>=0?an.turns[V3.from]:null;if(V3.from>=an.turns.length)V3.from=-1;
   const s0=DR?DR.s0:T?Math.max(0,T.s-250/f):0;const p=pointAt(an.pts,an.cum,s0).p;const end=DR?DR.end:T?Math.min(an.raw,T.s+600/f,(an.turns[V3.from+1]?an.turns[V3.from+1].s-120/f:1e9)):null;
-  V3.sim={x:p[0],y:p[1],h:bearing(p,pointAt(an.pts,an.cum,s0+40/f).p),v:T||DR?legSpeed(legIdxAt(an,s0))/f:0,rud:0,t:0,going:false,done:false,
+  V3.sim={x:p[0],y:p[1],h:bearing(p,pointAt(an.pts,an.cum,s0+40/f).p),v:T||DR||REG==='prac'?legSpeed(legIdxAt(an,s0))/f:0,rud:0,t:0,going:false,done:false,
     off:0,offMax:0,rudT:0,marks:an.marks.filter(m=>DR?m.s>=s0&&m.s<=end:!T||m.name===T.name).map(m=>({m,prev:null,res:null,minD:1e9})),aground:null,hits:0,s:s0,s0,end,turn:T,drill:V3.drill,ai:DR&&DR.ai?{...DR.ai}:null};
   // crosswind drill: a steady 12 kt from the beam of the first leg, and it moves the boat
   V3.plan=V3.drill==='pass'&&!an.turns.length?passPlan(an):null;if(V3.built)passMarks3(an,s0);
@@ -1876,7 +1920,7 @@ function frame3(t){if(!V3.run)return;V3.raf=requestAnimationFrame(frame3);
   const ox=Math.round(P.x/7)*7,oz=-Math.round(P.y/7)*7;V3.waves.position.set(ox,0,oz);const wd=(w.dir+180)*RAD,kx=Math.sin(wd),kz=-Math.cos(wd);
   for(let i=0;i<pa.length;i+=3){const x=b0[i]+ox,z=b0[i+2]+oz;const u=x*kx+z*kz;pa[i+1]=amp*(Math.sin(u*.9-tt*2.2)+.5*Math.sin((x*.37-z*.61)*1.7-tt*2.9)+.3*Math.sin((x*.8+z*.5)*1.3+tt*1.7))}
   g.attributes.position.needsUpdate=true;g.computeVertexNormals();
-  drillView3();const dO=drillOnly();if(V3.lineObj)V3.lineObj.visible=V3.line&&(!V3.plan||dO);if(V3.passG)V3.passG.visible=V3.line;
+  drillView3();const dO=drillOnly();if(V3.lineObj)V3.lineObj.visible=V3.line&&(!V3.plan||dO);if(V3.laneObj)V3.laneObj.visible=V3.line;if(V3.passG)V3.passG.visible=V3.line;
   if(V3.rib&&V3.line&&(!V3.plan||dO)){const pa=V3.lineObj.geometry.attributes.position.array;let j=0;for(const [x,y,dx,dy] of V3.rib){const hw=(.25+Math.hypot(x-P.x,y-P.y)*.006)*(dO?.6:1);
       pa[j++]=x-dy*hw;pa[j++]=.32;pa[j++]=-(y+dx*hw);pa[j++]=x+dy*hw;pa[j++]=.32;pa[j++]=-(y-dx*hw)}V3.lineObj.geometry.attributes.position.needsUpdate=true;V3.lineObj.geometry.computeBoundingSphere()}
   if(V3.mark){const bp=W3(P.x,P.y,0);const d=bp.distanceTo(cam.position);const k=Math.max(1,Math.min(14,d/45));V3.mark.visible=d>45;V3.mark.scale.setScalar(k);V3.mark.position.set(bp.x,8+2.6*k,bp.z)}
@@ -1940,8 +1984,9 @@ function hud3(an,P,w){const f=an.len/an.raw,set=(id,v)=>{const e=document.getEle
 
 function results3(){const m=V3.sim,an=currentAnalysis();if(m.ai&&!m.aground){drillResults(m,an);return}const f=an.len/an.raw;const plan=m.end!=null?elapsed(an,m.end)-elapsed(an,m.s0):totalTime(an);
   const rows=m.marks.map(b=>{const r=b.res;return`<tr><td>${esc(b.m.name)}</td><td class="${r&&r.ok?'ok':'bad'}">${r?(r.ok?'Correct, on your '+r.side:'Wrong side ('+r.side+')')+` · ${Math.round(r.clear)} m`:(m.aground?'Not reached':'Missed')}</td></tr>`}).join('');
-  const avg=m.t?m.off/m.t:0;
-  $('#v3res').innerHTML=`<h3>${m.aground?'Aground near '+esc(m.aground):m.turn?esc(m.turn.name)+' practice done':m.drill==='wind'?'Crosswind practice done':m.drill?'Drill over':'Finished'}</h3><table><tr><td>Time</td><td>${fmtTime(m.t)}${m.aground?'':` (plan ${fmtTime(plan)}, ${m.t>plan?'+':'−'}${fmtTime(Math.abs(m.t-plan))})`}</td></tr>
+  const avg=m.t?m.off/m.t:0;const PT=REG==='prac'&&!m.drill?PRAC_TURNS.info[S.course]:null;
+  if(PT&&V3.mode==='steer'){const ok=m.marks.every(b=>b.res&&b.res.ok);const tl=LS.get('cp.turnlast',{});tl[S.course]=(m.aground?'aground':ok?'clean':'buoy missed')+` · off line ${Math.round(avg)} m avg · rudder ${Math.round(100*m.rudT/(m.t||1))}%`;LS.set('cp.turnlast',tl)}
+  $('#v3res').innerHTML=`<h3>${m.aground?'Aground near '+esc(m.aground):PT?esc(PT.name)+' done':m.turn?esc(m.turn.name)+' practice done':m.drill==='wind'?'Crosswind practice done':m.drill?'Drill over':'Finished'}</h3><table><tr><td>Time</td><td>${fmtTime(m.t)}${m.aground?'':` (plan ${fmtTime(plan)}, ${m.t>plan?'+':'−'}${fmtTime(Math.abs(m.t-plan))})`}</td></tr>
     <tr><td>Off your line</td><td>average ${Math.round(avg)} m, worst ${Math.round(m.offMax)} m</td></tr>
     <tr><td>Rudder use</td><td class="${m.rudT/m.t>.25?'bad':'ok'}">${Math.round(100*m.rudT/(m.t||1))}% of the row${m.rudT/m.t>.25?': every bit of rudder slows the crew':''}</td></tr>
     ${m.hits?`<tr><td>Blade hits</td><td class="bad">${m.hits}</td></tr>`:''}${rows}</table>
@@ -1952,7 +1997,7 @@ function ui3(){for(const b of document.querySelectorAll('#v3mode button'))b.setA
   for(const b of document.querySelectorAll('#v3view button'))b.setAttribute('aria-pressed',b.dataset.v===V3.view);
   for(const b of document.querySelectorAll('#v3spd button'))b.setAttribute('aria-pressed',+b.dataset.s===V3.mult);
   const st=V3.mode==='steer';const fr=$('#v3from');fr.hidden=false;const an=currentAnalysis();
-  fr.innerHTML='<option value="-1">Whole course</option>'+an.turns.map((t,i)=>`<option value="${i}">Practise ${esc(t.name)}</option>`).join('')+'<optgroup label="Drills">'+Object.entries(DRILLNAME).map(([k,n])=>`<option value="d:${k}">Drill: ${n}</option>`).join('')+'</optgroup>';fr.value=V3.drill?'d:'+V3.drill:String(V3.from);
+  fr.innerHTML=(REG==='prac'?'<optgroup label="Turns">'+PRAC_TURNS.keys.map(k=>`<option value="t:${k}">Turn: ${esc(PRAC_TURNS.info[k].name)}</option>`).join('')+'</optgroup>':'<option value="-1">Whole course</option>'+an.turns.map((t,i)=>`<option value="${i}">Practise ${esc(t.name)}</option>`).join(''))+'<optgroup label="Drills">'+Object.entries(DRILLNAME).map(([k,n])=>`<option value="d:${k}">Drill: ${n}</option>`).join('')+'</optgroup>';fr.value=V3.drill?'d:'+V3.drill:REG==='prac'&&PRAC_TURNS.info[S.course]?'t:'+S.course:String(V3.from);
   $('#v3yield').hidden=!(st&&V3.drill==='pass');$('#v3p10').hidden=!(st&&V3.drill==='pass');
   $('#v3port').hidden=!st;$('#v3stbd').hidden=!st;$('#v3rudw').style.visibility=st?'visible':'hidden';$('#v3offbar').style.display=st?'':'none'}
 
@@ -1992,8 +2037,8 @@ function pipAlt(){const o=['cox','chase','air'].filter(v=>v!==V3.view);return o.
 V3.pipv=LS.get('cp.v3pipv','chase');
 $('#v3pip').onclick=()=>{const was=V3.view;V3.view=pipView();V3.pipv=was;LS.set('cp.v3pipv',was);ui3()};
 $('#v3pipsw').onclick=e=>{e.stopPropagation();V3.pipv=pipAlt();LS.set('cp.v3pipv',V3.pipv)};
-$('#v3from').onchange=e=>{const v=e.target.value;if(v.startsWith('d:')){V3.drill=v.slice(2);V3.from=-1}else{V3.drill=null;V3.from=+v}
-  if(REG==='prac'&&V3.drill&&S.course!=='Straight'){pracCourse(false);currentAnalysis();buildCourse3();V3._key=_anKey}resetSim();mini3Build(currentAnalysis());V3.miniLi=-1;ui3()};
+$('#v3from').onchange=e=>{const v=e.target.value;let tk=null;if(v.startsWith('d:')){V3.drill=v.slice(2);V3.from=-1}else if(v.startsWith('t:')){tk=v.slice(2);V3.drill=null;V3.from=-1;LS.set('cp.pturn',tk)}else{V3.drill=null;V3.from=+v}
+  if(REG==='prac'&&(tk||(V3.drill&&S.course!=='Straight'))){pracCourse(tk||false);currentAnalysis();buildCourse3();V3._key=_anKey}resetSim();mini3Build(currentAnalysis());V3.miniLi=-1;ui3()};
 $('#v3yield').onclick=()=>callYield();$('#v3p10').onclick=()=>power10();
 for(const [id,k] of[['#v3port','port'],['#v3stbd','stbd']]){const b=$(id);
   b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture&&b.setPointerCapture(e.pointerId);V3.keys[k]=true};
