@@ -1409,7 +1409,7 @@ function passMarks3(an,s0){let g=V3.passG;if(!g){g=V3.passG=new THREE.Group();V3
   const pts=passPts(an,s0),v=[],ix=[];let n=0;for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let dx=b[0]-a[0],dy=b[1]-a[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const c=pts[i],w=.5;
     v.push(c[0]-dy*w,.3,-(c[1]+dx*w),c[0]+dy*w,.3,-(c[1]-dx*w));if(n)ix.push(2*n-2,2*n-1,2*n,2*n-1,2*n+1,2*n);n++}
   const og=new THREE.BufferGeometry();og.setAttribute('position',new THREE.Float32BufferAttribute(v,3));og.setIndex(ix);
-  g.add(new THREE.Mesh(og,new THREE.MeshBasicMaterial({color:V3.lineCol||0x2e8b4a,side:THREE.DoubleSide,transparent:true,opacity:.9,polygonOffset:true,polygonOffsetFactor:-3})));
+  g.add(new THREE.Mesh(og,new THREE.MeshBasicMaterial({color:drillOnly()?DPASS:(V3.lineCol||0x2e8b4a),side:THREE.DoubleSide,transparent:true,opacity:.95,polygonOffset:true,polygonOffsetFactor:-3})));
   for(const c of V3.plan.pc){if(c.n<2)continue;const p=passAt(an,s0,c.m);const sp=textSprite(String(c.n),{size:.03,maxD:700,bg:'#f07a2a',fg:'#fff'});sp.position.copy(W3(p[0],p[1],1.6));g.add(sp)}}
 // the other crew is easy to spot in every view: an orange marker over the boat and a tag with the gap
 function aiTag3(an,AI){const B=V3.aiBoat;let mk=B.userData.mk;if(!mk){mk=new THREE.Mesh(new THREE.ConeGeometry(1.6,3.2,4),new THREE.MeshBasicMaterial({color:0x2a5db0,depthTest:false,transparent:true}));mk.rotation.x=Math.PI;mk.renderOrder=11;B.add(mk);B.userData.mk=mk}
@@ -1720,8 +1720,8 @@ function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v
     if(L<need){const m=[(sg[0][0]+sg[sg.length-1][0])/2,(sg[0][1]+sg[sg.length-1][1])/2],u=[(sg[sg.length-1][0]-sg[0][0])/L,(sg[sg.length-1][1]-sg[0][1])/L];sg=[[m[0]-u[0]*need/2,m[1]-u[1]*need/2],[m[0]+u[0]*need/2,m[1]+u[1]*need/2]]}
     mk('path',{d:pathD(sg),fill:'none',stroke:'#fff','stroke-width':8*k,'stroke-linecap':'butt'});mk('path',{d:pathD(sg),fill:'none',stroke:'#222','stroke-width':5*k,'stroke-linecap':'butt'})}
   const rc=cssCol(activeColorVar());V3.miniCol=rc;
-  if(!(V3.plan&&V3.sim))mk('path',{d:pathD(an.pts),fill:'none',stroke:rc,'stroke-width':2*k,opacity:.55,'stroke-dasharray':`${5*k} ${4*k}`});
-  V3.miniLeg=mk('path',{d:'',fill:'none',stroke:rc,'stroke-width':4.5*k,'stroke-linecap':'round','stroke-linejoin':'round'});V3.miniLi=-1;
+  const dO=drillOnly();if(dO)mk('path',{d:pathD(an.pts),fill:'none',stroke:'#fff','stroke-width':2.2*k,'stroke-dasharray':`${6*k} ${4*k}`});else if(!(V3.plan&&V3.sim))mk('path',{d:pathD(an.pts),fill:'none',stroke:rc,'stroke-width':2*k,opacity:.55,'stroke-dasharray':`${5*k} ${4*k}`});
+  V3.miniLeg=mk('path',{d:'',style:dO?'display:none':'',fill:'none',stroke:rc,'stroke-width':4.5*k,'stroke-linecap':'round','stroke-linejoin':'round'});V3.miniLi=-1;
   // only a few buoys fit at this size: every turn and channel buoy always, then race buoys that are not crowded by another
   const kept=an.turns.map(t=>t.pos),room=p=>kept.every(q=>dist(p,q)>16*k);
   for(const c of D.channel||[]){kept.push(c.p);const [x,y]=c.p,z=5*k;mk('path',{d:`M${x},${-y-z}L${x+z*.6},${-y}L${x},${-y+z}L${x-z*.6},${-y}Z`,fill:c.c==='red'?'#d8322a':'#2e8b4a',stroke:'#222','stroke-width':.6*k})}
@@ -1736,9 +1736,9 @@ function mini3Build(an){const svg=$('#v3minisvg');if(!svg)return;const box=$('#v
       brLab.push([best.p[0]+6*k,-best.p[1]+(near?16:-6)*k,nm])}}
   V3.miniBr.sort((a,b)=>a.s-b.s);
   for(const l of[D.start,COURSES[S.course].finish])mk('line',{x1:l[0][0],y1:-l[0][1],x2:l[1][0],y2:-l[1][1],stroke:'#222','stroke-width':2*k});
-  an.legs.forEach((l,i)=>{const m=pointAt(an.pts,an.cum,(l.s0+l.s1)/2).p;mk('circle',{cx:m[0],cy:-m[1],r:7*k,fill:'#fff',stroke:rc,'stroke-width':1.5*k});const t=mk('text',{x:m[0],y:-m[1]+3.3*k,'font-size':9*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#222'});t.textContent=i+1});
+  if(!dO)an.legs.forEach((l,i)=>{const m=pointAt(an.pts,an.cum,(l.s0+l.s1)/2).p;mk('circle',{cx:m[0],cy:-m[1],r:7*k,fill:'#fff',stroke:rc,'stroke-width':1.5*k});const t=mk('text',{x:m[0],y:-m[1]+3.3*k,'font-size':9*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#222'});t.textContent=i+1});
   for(const [x,y,nm] of brLab){const t=mk('text',{x,y,'font-size':9*k,'font-weight':700,'font-family':'sans-serif',fill:'#111',stroke:'#fff','stroke-width':2.5*k,'paint-order':'stroke'});t.textContent=nm}
-  if(V3.plan&&V3.sim){const pp=passPts(an,V3.sim.s0);V3.miniLeg.style.display='none';mk('path',{d:pathD(pp),fill:'none',stroke:rc,'stroke-width':3*k,'stroke-linecap':'round'});
+  if(V3.plan&&V3.sim){const pp=passPts(an,V3.sim.s0);V3.miniLeg.style.display='none';mk('path',{d:pathD(pp),fill:'none',stroke:dO?'#f07a2a':rc,'stroke-width':3*k,'stroke-linecap':'round'});
     for(const c of V3.plan.pc){if(c.n<2)continue;const p=passAt(an,V3.sim.s0,c.m);mk('circle',{cx:p[0],cy:-p[1],r:5*k,fill:'#f07a2a',stroke:'#fff','stroke-width':k});const t=mk('text',{x:p[0],y:-p[1]+2.6*k,'font-size':7*k,'text-anchor':'middle','font-weight':700,'font-family':'sans-serif',fill:'#fff'});t.textContent=c.n}}
   // the other crew: a navy and white boat with its name, so it is easy to tell from yours
   const ag=mk('g',{style:'display:none'});const bs=V3.miniZoom?BOATL/16:k*1.15;const ab=mk('g',{},ag);mk('path',{d:'M0,-9 L5.5,7 L0,4 L-5.5,7Z',fill:'#1f3a68',stroke:'#fff','stroke-width':1.6,'stroke-linejoin':'round'},ab);V3.miniAIb=ab;V3.miniBS=bs;
@@ -1750,10 +1750,14 @@ function mini3(an,P,li,s){if(!V3.mini||!V3.miniBoat)return;const k=V3.miniK;cons
       if(V3.miniZoom&&V3.miniWH){const [w,h]=V3.miniWH;const r0=P.h*Math.PI/180,cx=(P.x+ax)/2+Math.sin(r0)*20,cy=(P.y+ay)/2+Math.cos(r0)*20;$('#v3minisvg').setAttribute('viewBox',`${(cx-w/2).toFixed(1)} ${(-cy-h/2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`)}}}
   {const r=P.h*Math.PI/180,c=V3.miniZoom?BOATL/2:0;V3.miniBoat.setAttribute('transform',`translate(${(P.x+Math.sin(r)*c).toFixed(1)},${(-(P.y+Math.cos(r)*c)).toFixed(1)}) rotate(${P.h.toFixed(1)}) scale(${bs.toFixed(3)})`)}
   const l=an.legs[li];if(V3.miniLi!==li){V3.miniLi=li;const seg=[];for(let q=l.s0;q<=l.s1;q+=6)seg.push(pointAt(an.pts,an.cum,q).p);seg.push(pointAt(an.pts,an.cum,l.s1).p);V3.miniLeg.setAttribute('d',pathD(seg))}
-  const f=an.len/an.raw;const left=Math.max(0,(l.s1-s)*f);const e=$('#v3minil');const nb=(V3.miniBr||[]).find(b=>b.s>s);const bd=nb?(nb.s-s)*f:1e9;const txt=`Leg ${li+1} of ${an.legs.length} · to ${l.to} · ${fmtM(left)}`+(bd<=600?` · ${bridgeShort(nb.name)} bridge in ${fmtM(Math.round(bd/10)*10)}`:'');if(e.textContent!==txt)e.textContent=txt}
+  const f=an.len/an.raw;const left=Math.max(0,(l.s1-s)*f);const e=$('#v3minil');const nb=(V3.miniBr||[]).find(b=>b.s>s);const bd=nb?(nb.s-s)*f:1e9;const txt=drillOnly()?`Drill lane · ${fmtM(left)} to the end`:`Leg ${li+1} of ${an.legs.length} · to ${l.to} · ${fmtM(left)}`+(bd<=600?` · ${bridgeShort(nb.name)} bridge in ${fmtM(Math.round(bd/10)*10)}`:'');if(e.textContent!==txt)e.textContent=txt}
 const bridges3=()=>(D.bridges||[]).filter(b=>!b.fwy);
 const bridgeShort=n=>n.replace(/ Ship Canal/,'').replace(/ Bridge$/,'');
-function otherRoutes3(){const out=[];if(S.activeRoute!=='marked'||S.editing)out.push({name:'Marked course',pts:COURSES[S.course].line,cv:courseVar(S.course)});
+// a drill on the practice lake shows only the drill lane (white) and, when passing, the passing line (orange): no course or routes
+const drillOnly=()=>REG==='prac'&&!!V3.drill;const DLANE=0xffffff,DPASS=0xf07a2a;
+function drillView3(){const d=drillOnly();if(V3.dv===d)return;V3.dv=d;const rp=$('#v3rpick'),oo=$('#v3othon');if(rp)rp.hidden=d;if(oo)oo.parentElement.hidden=d;
+  if(V3.lineObj)V3.lineObj.material.color.set(d?DLANE:V3.lineCol);const e=$('#v3route');if(e)e.innerHTML=d?`<i style="background:#fff;border:1px solid #888"></i>Drill lane`:`<i style="background:#${V3.lineCol.getHexString()}"></i>${esc(activeRouteName())}`}
+function otherRoutes3(){const out=[];if(drillOnly())return out;if(S.activeRoute!=='marked'||S.editing)out.push({name:'Marked course',pts:COURSES[S.course].line,cv:courseVar(S.course)});
   for(const r of visibleRoutes())if(r.id!==S.activeRoute&&!(S.editing&&S.editing.id===r.id))out.push({name:r.name,pts:r.pts,cv:routeColVar(r)});return out}
 function buildCourse3(){
   const g=V3.course;while(g.children.length)g.remove(g.children[0]);const an=currentAnalysis();
@@ -1769,7 +1773,7 @@ function buildCourse3(){
   const hex='#'+lc.getHexString();
   an.legs.forEach((l,i)=>{const p=pointAt(an.pts,an.cum,l.s0+Math.min(60,(l.s1-l.s0)/2)).p;const s=textSprite('Leg '+(i+1)+' · '+String(Math.round(l.bearing)).padStart(3,'0')+'°',{size:.03,maxD:900,bg:'#1f5fbf',fg:'#fff'});s.userData.leg=true;s.position.copy(W3(p[0],p[1],3));g.add(s)});
   line.visible=V3.line;
-  {const e=$('#v3route');if(e)e.innerHTML=`<i style="background:${hex}"></i>${esc(activeRouteName())}`}
+  {const e=$('#v3route');if(e)e.innerHTML=`<i style="background:${hex}"></i>${esc(activeRouteName())}`}V3.dv=null;
   // other routes for this course, thin and quieter, each with its name
   if(V3.others)for(const o of otherRoutes3()){const oc=new THREE.Color(cssCol(o.cv)),oc2=cum(o.pts),L=oc2[oc2.length-1],v=[],ix=[];let n=0;
     for(let q=0;q<=L+3;q+=5){const a=pointAt(o.pts,oc2,Math.max(0,Math.min(q,L)-3)).p,b=pointAt(o.pts,oc2,Math.min(L,q+3)).p,c=pointAt(o.pts,oc2,Math.min(q,L)).p;let dx=b[0]-a[0],dy=b[1]-a[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
@@ -1872,8 +1876,8 @@ function frame3(t){if(!V3.run)return;V3.raf=requestAnimationFrame(frame3);
   const ox=Math.round(P.x/7)*7,oz=-Math.round(P.y/7)*7;V3.waves.position.set(ox,0,oz);const wd=(w.dir+180)*RAD,kx=Math.sin(wd),kz=-Math.cos(wd);
   for(let i=0;i<pa.length;i+=3){const x=b0[i]+ox,z=b0[i+2]+oz;const u=x*kx+z*kz;pa[i+1]=amp*(Math.sin(u*.9-tt*2.2)+.5*Math.sin((x*.37-z*.61)*1.7-tt*2.9)+.3*Math.sin((x*.8+z*.5)*1.3+tt*1.7))}
   g.attributes.position.needsUpdate=true;g.computeVertexNormals();
-  if(V3.lineObj)V3.lineObj.visible=V3.line&&!V3.plan;if(V3.passG)V3.passG.visible=V3.line;
-  if(V3.rib&&V3.line&&!V3.plan){const pa=V3.lineObj.geometry.attributes.position.array;let j=0;for(const [x,y,dx,dy] of V3.rib){const hw=.25+Math.hypot(x-P.x,y-P.y)*.006;
+  drillView3();const dO=drillOnly();if(V3.lineObj)V3.lineObj.visible=V3.line&&(!V3.plan||dO);if(V3.passG)V3.passG.visible=V3.line;
+  if(V3.rib&&V3.line&&(!V3.plan||dO)){const pa=V3.lineObj.geometry.attributes.position.array;let j=0;for(const [x,y,dx,dy] of V3.rib){const hw=(.25+Math.hypot(x-P.x,y-P.y)*.006)*(dO?.6:1);
       pa[j++]=x-dy*hw;pa[j++]=.32;pa[j++]=-(y+dx*hw);pa[j++]=x+dy*hw;pa[j++]=.32;pa[j++]=-(y-dx*hw)}V3.lineObj.geometry.attributes.position.needsUpdate=true;V3.lineObj.geometry.computeBoundingSphere()}
   if(V3.mark){const bp=W3(P.x,P.y,0);const d=bp.distanceTo(cam.position);const k=Math.max(1,Math.min(14,d/45));V3.mark.visible=d>45;V3.mark.scale.setScalar(k);V3.mark.position.set(bp.x,8+2.6*k,bp.z)}
   // buoys grow with distance so a cox can pick them out like on the water; true size up close
