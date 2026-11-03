@@ -402,7 +402,7 @@ const PRAC_TURNS=(()=>{const T=[
   {k:'Stbd90',name:'Starboard 90° turn',kind:'90',r:60,pts:[[500,350],[500,0],[100,0]]},
   {k:'Port120',name:'Tight port turn',kind:'tight',r:48,pts:[[300,0],[650,0],[450,346.4]]},
   {k:'Stbd120',name:'Tight starboard turn',kind:'tight',r:48,pts:[[475,303.1],[650,0],[250,0]]},
-  {k:'SBend',name:'S-bend',kind:'s',r:60,pts:[[-550,0],[-200,0],[0,200],[400,200]],names:['S-bend, first turn','S-bend, second turn']}];
+  {k:'SBend',name:'S-bend',kind:'s',r:60,pts:[[-550,0],[-200,0],[-58.6,141.4],[341.4,141.4]],names:['S-bend, first turn','S-bend, second turn']}];
   const U=(a,b)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]);return[(b[0]-a[0])/d,(b[1]-a[1])/d]};
   const courses={},smooth={},info={};
   for(const t of T){const P=t.pts,buoys=[],arcs=[],sp=[P[0]];let len=0;
@@ -1128,7 +1128,7 @@ function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,
     const prev=an.turns[i-1],nxt=an.turns[i+1];const close=prev&&m-pre-20*sl<prev.s*f+postOf(prev);const nextClose=nxt&&nxt.s*f-preOf(nxt,li+1)-20*sl<m+postOf(t);
     const out=t.dir==='port'?'starboard':'port',Dir=t.dir==='port'?'Port':'Starboard',kind=t.angle<35?'bend':'turn',m0=m-pre;
     const lens=n=>Math.max(1,Math.round((pre+n*sl)/17.5));const TN=REG==='prac'?`${Dir} ${kind}`:`${t.name} (${t.dir})`;
-    if(!close&&m0-20*sl>30)add(m0-20*sl,'turn',`${TN} in 20`,`Buoy on our ${t.side}, about ${lens(20)} boat lengths ahead (${t.name}). Tell the crew what is coming: ${Math.round(t.angle)}°${t.angle>=100?', a tight one':''}.`,`${Dir} ${kind} in twenty. Buoy on our ${t.side}`);
+    if(!close&&m0-20*sl>30)add(m0-20*sl,'turn',`${TN} in 20`,`Buoy on our ${t.side}, about ${lens(20)} boat lengths ahead (${t.name}). Tell the crew what is coming: ${Math.round((t.arc?t.arc.ang:t.angle)/5)*5}°${t.angle>=100?', a tight one':''}.`,`${Dir} ${kind} in twenty. Buoy on our ${t.side}`);
     if(m0-5*sl>(prev?prev.s*f+postOf(prev)+10:30))add(m0-5*sl,'turn',`${TN} in 5`,`Count it down so the crew is ready: “In 5… 4… 3… 2… 1”. The buoy is about ${lens(5)} lengths ahead.`,`${Dir} ${kind} in five. Sit up, ready`);
     add(m0,'turn',kind==='bend'?`Easing into the bend`:`Turning now, more ${out}!`,kind==='bend'?'Small rudder, held steady through the bend. Keep the pressure even.':`Ease the rudder on and build a steady arc. ${out[0].toUpperCase()+out.slice(1)} side pulls harder to help the boat round.`,kind==='bend'?'Easing into the bend. Stay long':`Turning now. More ${out}. Stay long`);
     if(t.angle>=60)add(m,'turn',`Buoy on our ${t.side} hip`,'Level with the buoy. Hold the arc, keep the boat set, stay long.',`Buoy on our ${t.side}. Hold it`);
@@ -1366,14 +1366,15 @@ function passCard(){const P=passPlan({len:1,raw:1}),L=BOATL,M=P.b1+40,W=640,H=15
 // Practice page: one card per practice-lake turn, with a small plan, how to steer it and buttons to watch or steer it in 3D
 function turnCards(){const last=LS.get('cp.turnlast',{});return`<div class="tgrid">${PRAC_TURNS.keys.map(k=>{const t=PRAC_TURNS.info[k],C=PRAC_TURNS.courses[k],sm=PRAC_TURNS.smooth[k];
   const all=[...C.line,...C.turns,...sm.pts];let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const p of all){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])}
-  const pad=40,w=Math.max(x1-x0,(y1-y0)*1.6)+2*pad,h=w/1.6,cx=(x0+x1)/2,cy=(y0+y1)/2;const P=q=>`${q[0].toFixed(1)},${(-q[1]).toFixed(1)}`;const sc=w/240;
+  const pad=70,w=Math.max(x1-x0+2*pad,(y1-y0+2*pad)*1.6),h=w/1.6,cx=(x0+x1)/2,cy=(y0+y1)/2;const P=q=>`${q[0].toFixed(1)},${(-q[1]).toFixed(1)}`;const sc=w/240;
   const lane=`<polyline points="${C.line.map(P).join(' ')}" fill="none" stroke="#fff" stroke-width="${2.2*sc}" stroke-dasharray="${7*sc} ${5*sc}"/>`;
   const tl=`<polyline points="${sm.pts.map(P).join(' ')}" fill="none" stroke="#f07a2a" stroke-width="${3.2*sc}" stroke-linecap="round"/>`;
   const by=C.turns.map(b=>`<path d="M${b[0]},${-b[1]-6*sc}L${b[0]+5.5*sc},${-b[1]+4*sc}L${b[0]-5.5*sc},${-b[1]+4*sc}Z" fill="#f6d827" stroke="#222" stroke-width="${.8*sc}"/>`).join('');
   const s0=C.line[0],s1=C.line[1],d=Math.hypot(s1[0]-s0[0],s1[1]-s0[1]),u=[(s1[0]-s0[0])/d,(s1[1]-s0[1])/d],q=[s0[0]+u[0]*60,s0[1]+u[1]*60];
   const boat=`<g transform="translate(${P(q)}) rotate(${(Math.atan2(u[0],u[1])*180/Math.PI).toFixed(1)}) scale(${sc*1.1})"><path d="M0,-9 L5.5,7 L0,4 L-5.5,7Z" fill="#7b1e34" stroke="#e0b12a" stroke-width="1.6"/></g>`;
   const res=last[k]?`<span class="sub">Last try: ${esc(last[k])}</span>`:'';
-  const cl=pracCalls(k);return`<div class="tcard"><h4>${esc(t.name)}</h4><svg viewBox="${cx-w/2} ${-cy-h/2} ${w} ${h}" role="img" aria-label="${esc(t.name)} plan">${lane}${tl}${by}${boat}</svg><p>${turnTip(t,sm)}</p><ol class="pcalls tcalls">${cl.map(c=>`<li><b>${esc(c.title)}</b><span>${esc(c.text)}</span></li>`).join('')}</ol>${res}<div class="row"><button class="btn" data-pturnw="${k}">▶ Watch it first</button><button class="btn primary" data-pturn="${k}">Steer it in 3D</button></div></div>`}).join('')}</div>
+  const cl=pracCalls(k),cc=cum(sm.pts);const dots=cl.map((c,i)=>{const q0=pointAt(sm.pts,cc,c.s).p,qa=pointAt(sm.pts,cc,Math.max(0,c.s-3)).p,qb=pointAt(sm.pts,cc,c.s+3).p;const dx=qb[0]-qa[0],dy=qb[1]-qa[1],dl=Math.hypot(dx,dy)||1,sd=i%2?1:-1,o=15*sc;const q=[q0[0]-dy/dl*o*sd,q0[1]+dx/dl*o*sd];return`<g><line x1="${q0[0].toFixed(1)}" y1="${(-q0[1]).toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${(-q[1]).toFixed(1)}" stroke="#c25a14" stroke-width="${1*sc}"/><circle cx="${q0[0].toFixed(1)}" cy="${(-q0[1]).toFixed(1)}" r="${1.8*sc}" fill="#c25a14"/><circle cx="${q[0].toFixed(1)}" cy="${(-q[1]).toFixed(1)}" r="${6.5*sc}" fill="#f07a2a" stroke="#fff" stroke-width="${1.2*sc}"/><text x="${q[0].toFixed(1)}" y="${(-q[1]+3.2*sc).toFixed(1)}" font-size="${8.5*sc}" font-weight="700" text-anchor="middle" fill="#fff">${i+1}</text></g>`}).join('');
+  return`<div class="tcard"><h4>${esc(t.name)}</h4><svg viewBox="${cx-w/2} ${-cy-h/2} ${w} ${h}" role="img" aria-label="${esc(t.name)} plan">${lane}${tl}${by}${boat}${dots}</svg><p>${turnTip(t,sm)}</p><ol class="pcalls tcalls">${cl.map(c=>`<li><b>${esc(c.title)}</b><span>${esc(c.text)}</span></li>`).join('')}</ol>${res}<div class="row"><button class="btn" data-pturnw="${k}">▶ Watch it first</button><button class="btn primary" data-pturn="${k}">Steer it in 3D</button></div></div>`}).join('')}</div>
   <p class="sub">White dashed: the lane. Orange: the turn line to steer, a steady arc about 10 m outside the yellow buoy.</p>`}
 // the calls for one practice turn, worked out on its turn line
 function pracCalls(k){const c0=S.course,r0=S.activeRoute;S.course=k;S.activeRoute='smooth-'+k;let cl=[];try{cl=calls().filter(c=>c.kind!=='start'&&c.kind!=='finish')}finally{S.course=c0;S.activeRoute=r0}return cl}
