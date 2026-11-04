@@ -1051,7 +1051,7 @@ function hazards(){const an=currentAnalysis();const key=_anKey+JSON.stringify(HA
     out.push({kind:'narrow',m:r.m0,m1:r.m1,p:mid.p,place:at,w:Math.round(mn.w),len,
       title:`Narrow water${at?' near '+at:''}`,
       text:`About ${Math.round(mn.w)} m bank to bank${len>=40?' for '+fmtM(len):''}${wb>mn.w*1.6?`, down from about ${Math.round(wb/10)*10} m`:''}. Hold the middle, small rudder only, no passing side by side.`,
-      say:`Narrow water coming. Hold the middle`})}
+      say:`Narrow water. Hands level, keep it clean`})}
   const close=runs(w=>w.w>=NAR&&Math.min(w.port,w.stbd)<30);
   for(const r of close){const mn=r.pts.reduce((a,b)=>Math.min(b.port,b.stbd)<Math.min(a.port,a.stbd)?b:a);const side=mn.port<mn.stbd?'port':'starboard';const d=Math.round(Math.min(mn.port,mn.stbd));const at=placeNear(mn.p);
     out.push({kind:'shore',m:r.m0,m1:r.m1,p:mn.p,side,title:`Shore close on your ${side}${at?' near '+at:''}`,text:`This line passes about ${d} m from the shore on your ${side}. Banks shelve and can be shallow or weedy: watch the ${side} blades and give it a little room.`,say:`Shore close on ${side}`})}
@@ -1114,7 +1114,7 @@ function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,
   const prac=REG==='prac';const o0=LS.get('cp.callopt',{});const opt=prac?{marks:false,moves:false,land:false,focus:false}:{marks:o0.marks!==false,moves:o0.moves!==false,land:!!o0.land,focus:o0.focus!==false};const l0=an.legs[0];
   const sayM=v=>fmtM(v).replace(' m','');const lenOf=m=>Math.max(1,Math.round(m/17.5));const cbx=m=>`Cox box about ${fmtTime(elapsed(an,Math.max(0,Math.min(L,m/f))))}`;
   const anchors=[],busy=[];
-  if(!prac){add(0,'start','Start',`Rolling start: be at full race pace before the line. Heading ${hdg(l0.bearing)}. Point: ${pointOfAim(an,l0)}.`,'Bow ball over the line. Full pressure, this one. Hold your point','Bow ball crosses the start line');
+  if(!prac){add(0,'start','Start',`Rolling start: be at full race pace before the line. Heading ${hdg(l0.bearing)}. Point: ${pointOfAim(an,l0)}.`,'That’s the line! We’re racing. Full pressure','Bow ball crosses the start line');
     if(an.len>1200)add(20*SL(0),'move','Settle: lengthen in 2','Twenty strokes of full pressure off the line, then settle to race rhythm. Say it on the recovery, call the change on the catch.','Settle in two. One. Two. LENGTH. This is our race pace','About 20 strokes in, the crew is up to speed')}
   // landmarks: cues to hang calls on (spoken only if the cox wants them)
   for(const lab of prac?[]:D.labels){if(lab[3]==='water'||lab[3]==='hazard')continue;const o=sideOf(an,[lab[1],lab[2]]);
@@ -1135,10 +1135,10 @@ function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,
     busy.push([m0-20*sl-10,m+postOf(t)+5]);
     if(!close&&m0-20*sl>30)add(m0-20*sl,'turn',`${TN} in 20`,`Tell the crew what is coming: ${ang}°${t.angle>=100?', a tight one':''}${prac?'':' ('+t.name+')'}. Stay long and relaxed, the turn is your job, not theirs.`,`${Dir} ${kind} in twenty. Buoy on our ${t.side}. Stay long`,`The turn buoy is about ${lens(20)} lengths ahead`);
     if(m0-5*sl>(prev?prev.s*f+postOf(prev)+10:30))add(m0-5*sl,'turn',`${TN} in 5`,`Count it down so the crew is ready: “In 5… 4… 3… 2… 1”.`,`${Dir} ${kind} in five. Four. Three. Two. One`,`The buoy is about ${lens(5)} lengths ahead, off our ${t.side} bow`);
-    add(m0,'turn',kind==='bend'?`Easing into the bend`:`Turning now, more ${out}!`,kind==='bend'?'Small rudder, held steady through the bend. Keep the pressure even.':`Ease the rudder on and build a steady arc. ${Out} side pulls harder to help the boat round. Don't rush the slide.`,kind==='bend'?'Easing into the bend. Stay long':`Turning now. More ${out} pressure. Stay long`,`The buoy is about ${lenOf(pre)} lengths ahead: start the arc now`);
+    add(m0,'turn',kind==='bend'?`Easing into the bend`:`Turning now, more ${out}!`,kind==='bend'?'Small rudder, held steady through the bend. Keep the pressure even.':`Ease the rudder on and build a steady arc. ${Out} side pulls harder to help the boat round. Don't rush the slide.`,kind==='bend'?'Easing into the bend. Stay long':`Turning now. ${Out} pressure! Stay long`,`The buoy is about ${lenOf(pre)} lengths ahead: start the arc now`);
     if(t.angle>=60)add(m,'turn',`Buoy on our ${t.side} hip`,'Level with the buoy. Hold the arc, keep the boat set, stay long.',`Buoy on our ${t.side}. Hold it. Set the boat`,'The buoy is level with the cox seat');
     if(nxt&&nextClose){const d2=nxt.dir==='port'?'Port':'Starboard';add(m+postOf(t),'turn',`Out of it, straight into the ${nxt.dir} ${nxt.angle<35?'bend':'turn'}`,`Don’t let the rudder fully off. Buoy on our ${nxt.side} next: switch the pressure to ${nxt.dir==='port'?'starboard':'port'}.`,`Out of it. ${d2} next, buoy on our ${nxt.side}`,'The bow points out of the turn')}
-    else if(nx){const post=postOf(t);add(m+post,'turn',`Rudder off, even pressure`,prac?`Straighten up on the new line, heading ${hdg(nx.bearing)}. Settle the crew back to even pressure.`:`Straighten up. New point: ${pointOfAim(an,nx)}. Heading ${hdg(nx.bearing)}.`,`Rudder off. Even pressure. Back to race rhythm`,'The new point is lined up over the bow');
+    else if(nx){const post=postOf(t);add(m+post,'turn',`Rudder off, even pressure`,prac?`Straighten up on the new line, heading ${hdg(nx.bearing)}. Settle the crew back to even pressure.`:`Straighten up. New point: ${pointOfAim(an,nx)}. Heading ${hdg(nx.bearing)}.`,`Even pressure. We’re out of it, back to rhythm`,'The new point is lined up over the bow');
       if(!prac)anchors.push({exit:1,m:m+post+20,cue:`Out of ${/turn|cut|bend/i.test(t.name)?'the '+t.name:'the turn'}`,short:`Out of the turn`});
       if(opt.moves&&nx.dist>500&&!nextClose)add(m+post+20,'move','Power 10 out of the turn','Ten strokes to get the speed back after the turn. Make it count: name what the ten is for.','Power ten to get it back. On this one','The rudder is straight and the boat is set')}});
   for(const h of hazards()){const n=h.kind==='narrow'?15:10,warn=n*SL(h.m);
@@ -1167,7 +1167,7 @@ function buildCalls(an){const f=an.len/an.raw,L=an.raw,out=[];const add=(m,kind,
     else if(o.kind==='bridge'||o.title==='Water opens up'){c.text=o.text+' '+c.text;out.splice(out.indexOf(o),1)}}
   for(let j=out.length-1;j>=0;j--){const c=out[j];if(c.title==='Power 10 out of the turn'&&out.some(x=>x!==c&&x.kind==='move'&&Math.abs(x.s-c.s)*f<60))out.splice(j,1)}
   for(const u of CALLS_USER)if(isFinite(u.m)&&u.text)add(+u.m,'custom',u.text.slice(0,60),u.note||'',u.text,'');
-  if(!prac)add(an.len,'finish','Finish',`${fmtM(an.len)} · plan ${fmtTime(totalTime(an))}. Keep rowing past the line until you call it.`,'Finish. Paddle on. Well done','Bow crosses the finish line');
+  if(!prac)add(an.len,'finish','Finish',`${fmtM(an.len)} · plan ${fmtTime(totalTime(an))}. Keep rowing past the line until you call it.`,'That’s the line! Paddle on. Well done','Bow crosses the finish line');
   const br=out.filter(c=>c.kind==='bridge');for(let j=out.length-1;j>=0;j--){const c=out[j];if(c.kind==='move'&&c.title.startsWith('Power 10 out')&&br.some(b=>Math.abs(b.s-c.s)*f<160))out.splice(j,1)}
   out.sort((a,b)=>a.s-b.s||(a.kind==='start'?-1:0));
   // long straights: one technical focus call so the crew is never left in silence
@@ -1338,7 +1338,7 @@ const SKILLS=[
  {id:'turns',title:'Turns and buoy lines',turn:true,
   why:'Most head race time is lost at turns: swinging wide, oversteering, or a buoy on the wrong side (often 10 seconds a buoy).',
   how:['Know which side every buoy stays on before race day (Preview in Race).','Start the turn early with a steady arc and ask for pressure on the outside so the crew helps turn the boat.','Let the rudder off gradually as you come out on the new heading.','At many regattas the hull must stay inside the buoy line while blades may cross it. Check the rules: some disqualify any crossing.'],
-  calls:['“Turn in 5, more pressure on starboard!”','“Easing into it… holding the arc… letting the rudder off.”']},
+  calls:['“Port turn in five… four… three… two… one… starboard pressure!”','“Even pressure. We’re out of it, back to rhythm.”']},
  {id:'bridges',title:'Bridges and arches',course:true,
   why:'You must hit the racing arch, bridges make great checkpoints, and two boats under one arch is dangerous.',
   how:['Know the racing arch of every bridge on the course, and which arches are for warm-up traffic.','Line up the arch from a long way back and aim at the arch, not at the boat ahead.','Use bridges as move points: “5 to get there, 3 to get under, 5 to push away.”','Don’t start a pass that puts both boats into one arch.'],
@@ -1346,11 +1346,11 @@ const SKILLS=[
  {id:'wind',title:'Steering in wind',drill:'wind',
   why:'A crosswind pushes the bow round and the whole boat sideways. Coxes who react late zig-zag and use lots of rudder.',
   how:['Before the race, check which legs have head, tail or crosswind (Weather in Race).','Hold a little rudder against a crosswind rather than making big late corrections.','Aim slightly upwind of your point so the boat tracks along the line.'],
-  calls:['“Wind from starboard here, holding a touch of rudder, stay level!”']},
+  calls:['“Wind on starboard, stay set, hands level!”','“Headwind leg: lengthen it out, send it!”']},
  {id:'straight',title:'Straight steering, little rudder',course:true,
   why:'Every bit of rudder drags the boat. Top coxes steer with tiny, early corrections.',
   how:['Pick a point of aim on the far shore for each leg and keep it on your bow.','Hold the strings lightly in your fingers and make millimetre corrections.','Steer when the blades are out of the water.','In the 3D drills, aim to keep rudder use under 25%.'],
-  calls:['“Point is the white boathouse, holding it, nice and set!”']},
+  calls:['“Nice and set. Let it run!”','“Hands level, set the boat.”']},
  {id:'start',title:'Head race start',tab:'calls',
   why:'Head races use a rolling start: the clock starts at the line, so you build speed in the chute and cross at full pace.',
   how:['Be early to marshalling and know your bow number and start order.','Build in the chute: half, three-quarters, full pressure, timed to hit the line at race pace.','Get clean first strokes. Most steering trouble starts with messy blades.','Settle to race rhythm at a landmark you picked in advance.'],
@@ -1470,13 +1470,13 @@ function aiPose(an,a){const f=an.len/an.raw;const {p,h}=pointAt(an.pts,an.cum,Ma
 const PASS={gap0:25,k:.86,lane:-4,move:5,len:720}; // lane: negative is to port
 // where each call should come, in metres from the start of the drill, worked out from the speed difference
 function passPlan(an){const f=an.len/an.raw;const v=legSpeed(0),d=v*(1-PASS.k),L=BOATL,g=PASS.gap0;const at=gain=>gain/d*v; // metres we row to gain that much on them
-  const pc=[{n:1,m:0,key:'start',t:'Sit up, eyes on their stern',say:'Sit up, eyes on their stern. We are walking them down.',when:'At the start, a length and a half of open water behind them'},
-    {n:2,m:12,key:'out',t:'Ease to port, onto the passing line',say:'Easing to port, onto the passing line.',when:`Straight away: you pick the side. Ease ${Math.abs(PASS.lane)} m to port so your bow never points at their stern`},
-    {n:3,m:at(g-L),key:'yield',t:'“Yield to starboard!” (Y)',say:'Crew ahead, yield to starboard!',when:'When your bow ball enters the yellow zone: one boat length (about 18 m) of open water to their stern. That is when you become the overtaking crew. Call once, loud, with the side. They must start moving before you are half a length away'},
-    {n:4,m:at(g),key:'power',t:'Overlap: “Power ten, now!” (P)',say:'Overlap. Power ten, now! Walk through them.',when:'Your bow ball reaches their stern'},
-    {n:5,m:at(g+L),key:'level',t:'“Bow ball level, keep walking!”',say:'Bow ball level. Seat by seat, keep walking!',when:'Your bow is level with theirs'},
-    {n:6,m:at(g+2*L),key:'clear',t:'“Clear water! One more length”',say:'Clear water! Hold the pressure, one more length.',when:'Your stern passes their bow'},
-    {n:7,m:at(g+3*L),key:'back',t:'“A length clear, back to the line”',say:'A length clear. Back to the line and settle.',when:'A full length of open water ahead of them: ease back to starboard, onto your line'}];
+  const pc=[{n:1,m:0,key:'start',t:'“Crew ahead, we’re walking them down”',say:'Crew ahead, a length and a half. We’re walking them down. Eyes in the boat.',when:'At the start, a length and a half of open water behind them'},
+    {n:2,m:12,key:'out',t:'“Stay long”: ease out to port',say:'Stay long, I’ve got the steering.',when:`Straight away: you pick the side. Ease ${Math.abs(PASS.lane)} m to port so your bow never points at their stern`},
+    {n:3,m:at(g-L),key:'yield',t:'“Yield to starboard!” (Y)',say:'Yield! Yield to starboard!',when:'When your bow ball enters the yellow zone: one boat length (about 18 m) of open water to their stern. That is when you become the overtaking crew. Call once, loud, with the side. They must start moving before you are half a length away'},
+    {n:4,m:at(g),key:'power',t:'Overlap: “Ten to walk through, on this one!” (P)',say:'We’re on their stern! Ten to walk through them, on this one!',when:'Your bow ball reaches their stern'},
+    {n:5,m:at(g+L),key:'level',t:'“We’ve got their bow ball! Take seats!”',say:'We’ve got their bow ball! Take seats, keep walking!',when:'Your bow is level with theirs'},
+    {n:6,m:at(g+2*L),key:'clear',t:'“Open water! Keep it on”',say:'Open water! Keep it on, one more length!',when:'Your stern passes their bow'},
+    {n:7,m:at(g+3*L),key:'back',t:'“Settle. Long and strong”',say:'We’re through. Settle in two, long and strong.',when:'A full length of open water ahead of them: ease back to starboard, onto your line'}];
   const out0=10,out1=60,b0=pc[6].m,b1=b0+60;const lat=m=>m<out0?0:m<out1?PASS.lane*sm((m-out0)/(out1-out0)):m<b0?PASS.lane:m<b1?PASS.lane*(1-sm((m-b0)/(b1-b0))):0;
   return{pc,lat,b1,out1}}
 const sm=u=>u*u*(3-2*u);
@@ -1484,14 +1484,14 @@ const sm=u=>u*u*(3-2*u);
 // Rules (Head of the Lake): they are overtaking once within a length of open water; you must start moving before they are half a length away; never stop rowing.
 const YLD={gap0:52.5,k:1.16,lane:5,their:-4};
 function yieldPlan(an){const L=BOATL,g=YLD.gap0,at=gap=>(g-gap)/(YLD.k-1); // metres you row while they close to that gap
-  const pc=[{n:1,m:0,key:'start',t:'“Crew behind. Eyes in the boat, stay long”',say:'Crew coming up behind. Eyes in the boat, stay long. I have got them.',when:'At the start, they are about 3 lengths behind. One quick look over your shoulder, then talk to your own crew, not about them'},
-    {n:2,m:at(2*L),key:'look',t:'“They’re two lengths back on our port”',say:'Two lengths back, on our port. We give them starboard water when they call.',when:'A glance back at 2 lengths: see which side they are coming on, so the yield is already planned'},
-    {n:3,m:at(L),key:'yield',t:'They call “Yield!”: “Yielding to starboard, now!” (Y)',say:'Yielding to starboard, now. Keep the pressure on.',when:'At one length of open water they become the overtaking crew and call. Answer at once and put a small, steady rudder on to starboard. The crew keeps full pressure'},
-    {n:4,m:at(L/2),key:'clear',t:'“On our new line, stay long”',say:'On our new line. Stay long, stay together.',when:`By half a length you must be moving, and a top cox is already ${YLD.lane} m over, giving them ${YLD.lane-YLD.their} m between the boats`},
-    {n:5,m:at(0),key:'hold',t:'Overlap: “Hold them! Make them earn every seat!” (P)',say:'They are on us. Hold them. Make them earn every seat.',when:'Their bow reaches your stern. You may race them hard with a power ten, just never steer back into their water'},
-    {n:6,m:at(-L),key:'level',t:'“Bow balls level, stay with them”',say:'Bow balls level. Stay with them, long and strong.',when:'Their bow is level with yours: keep your crew’s eyes in the boat, the rhythm is yours, not theirs'},
-    {n:7,m:at(-2*L),key:'through',t:'“They’re through. Stay long through their wash”',say:'They are through. Stay long through the wash.',when:'Their stern passes your bow. Their puddles and wash will rock the boat: sit tall and keep the hands level'},
-    {n:8,m:at(-3*L),key:'back',t:'“Back to our line”',say:'Back to our line. Settle, and go after the next crew.',when:'A full length of open water ahead of you: ease back to port, onto your line'}];
+  const pc=[{n:1,m:0,key:'start',t:'“Eyes in the boat”',say:'Crew coming up behind. Eyes in the boat. I’ve got them.',when:'At the start, they are about 3 lengths behind. One quick look over your shoulder, then talk to your own crew, not about them'},
+    {n:2,m:at(2*L),key:'look',t:'“Crew on port, two lengths”',say:'Crew on our port, two lengths. Stay long, stay with us.',when:'A glance back at 2 lengths: see which side they are coming on, so the yield is already planned'},
+    {n:3,m:at(L),key:'yield',t:'They call “Yield!”: “Yielding!” (Y)',say:'Yielding! Keep the pressure on.',when:'At one length of open water they become the overtaking crew and call. Answer at once and put a small, steady rudder on to starboard. The crew keeps full pressure'},
+    {n:4,m:at(L/2),key:'clear',t:'“Long and strong”',say:'We’re over. Long and strong, stay together.',when:`By half a length you must be moving, and a top cox is already ${YLD.lane} m over, giving them ${YLD.lane-YLD.their} m between the boats`},
+    {n:5,m:at(0),key:'hold',t:'Overlap: “Ten to hold them, on this one!” (P)',say:'They’re on our stern. Ten to hold them, on this one! Make them earn every seat.',when:'Their bow reaches your stern. You may race them hard with a power ten, just never steer back into their water'},
+    {n:6,m:at(-L),key:'level',t:'“Bow balls level. Stay with them”',say:'Bow balls level. Stay with them, long and strong.',when:'Their bow is level with yours: keep your crew’s eyes in the boat, the rhythm is yours, not theirs'},
+    {n:7,m:at(-2*L),key:'through',t:'“Hands up through the wash”',say:'They’re through. Hands up through the wash, stay set.',when:'Their stern passes your bow. Their puddles and wash will rock the boat: sit tall and keep the hands level'},
+    {n:8,m:at(-3*L),key:'back',t:'“Settle. Go get the next crew”',say:'Settle in two. Now we go get the next crew.',when:'A full length of open water ahead of you: ease back to port, onto your line'}];
   const o0=pc[2].m+4,o1=pc[3].m,b0=pc[7].m,b1=b0+60;const lat=m=>m<o0?0:m<o1?YLD.lane*sm((m-o0)/(o1-o0)):m<b0?YLD.lane:m<b1?YLD.lane*(1-sm((m-b0)/(b1-b0))):0;
   return{pc,lat,b1,out1:o1,kind:'yield',name:'yield line'}}
 // the yield calls as the drill goes; Y (answer the call) and P (power ten) are yours to make
@@ -1503,7 +1503,7 @@ function yieldCalls(m,an,f,pm,a){const P=V3.plan;if(!P||P.kind!=='yield')return;
   go('clear',gap<=L/2&&!!m.ack);go('hold',gap<=0);go('level',gap<=-L);go('through',gap<=-2*L);go('back',gap<=-3*L)}
 function ackYield(){const m=V3.sim;if(!m||!m.ai||m.ai.kind!=='fast'||!m.going||m.done)return;const a=m.ai;if(m.ack)return;
   if(!a.called){m.early=(m.early||0)+1;flash3('Not yet','They have not called. Keep rowing and watch them come up.');return}
-  m.ack=m.t;const P=V3.plan,x=P&&P.pc.find(p=>p.key==='yield');if(m.pcall)m.pcall.yield=m.t;flash3('3. “Yielding to starboard, now!”','Small, steady rudder to starboard. Keep full pressure.');say3('Yielding to starboard, now. Keep the pressure on.')}
+  m.ack=m.t;const P=V3.plan,x=P&&P.pc.find(p=>p.key==='yield');if(m.pcall)m.pcall.yield=m.t;flash3('3. “Yielding to starboard, now!”','Small, steady rudder to starboard. Keep full pressure.');say3('Yielding! Keep the pressure on.')}
 
 // the passing line as points on the map (raw units), from where the drill starts
 function passPts(an,s0){const f=an.len/an.raw,P=V3.plan;const out=[];for(let m=0;m<=P.b1+40;m+=5){const q=pointAt(an.pts,an.cum,Math.min(an.raw,s0+m/f));const r=q.h*Math.PI/180,l=P.lat(m)/f;out.push([q.p[0]+Math.cos(r)*l,q.p[1]-Math.sin(r)*l])}return out}
@@ -1602,7 +1602,7 @@ function drillResults(m,an){const f=an.len/an.raw;const tr=(k,v,ok)=>`<tr><td>${
     if(m.narrowPass)rows+=tr('Narrow water','You overlapped in narrow water: no passing there',false);
     sum=head+(m.passed?' in '+fmtTime(m.passT):'')}
   else{const ok=m.clearT!=null&&!m.late&&!m.clash&&(!V3.plan||!!m.ack);head=m.aground?'Aground near '+esc(m.aground):ok?'Yielded well ✓':m.passed?'They got past, with problems':'They have not got past yet';
-    if(V3.plan)rows+=tr('Answered the call',m.ack?`${(m.ack-m.ai.called).toFixed(1)} s after they called`:'Never answered: say “Yielding to starboard!” (Y)',!!m.ack&&m.ack-m.ai.called<=3);
+    if(V3.plan)rows+=tr('Answered the call',m.ack?`${(m.ack-m.ai.called).toFixed(1)} s after they called`:'Never answered: call “Yielding!” (Y)',!!m.ack&&m.ack-m.ai.called<=3);
     rows+=tr('Move over',m.clearT!=null?`Clear ${fmtTime(m.clearT-m.ai.called)} after their call${m.late?', but late':''}`:'You did not make room',m.clearT!=null&&!m.late);
     if(V3.plan&&m.passed)rows+=tr('Back to the line',m.backOK?'Back on your line once they were a length clear':'Still out to the side: ease back once they are a length clear',!!m.backOK);
     if(V3.plan&&m.tens)rows+=tr('Held them',`${m.tens} power ten${m.tens>1?'s':''} as they came through`,null);
