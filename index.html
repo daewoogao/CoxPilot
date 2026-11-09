@@ -1518,7 +1518,7 @@ function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const
   <p class="sub">${Object.keys(qa).length} of ${qs.length} answered, ${qs.filter((q,i)=>qa[i]===q.a).length} right. <button class="lnk" id="qreset">Start again</button></p></div>
   <h2>Where this comes from</h2><ul class="sub psrc">${PSRC.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul>`;
   pfilter();
-  const ps=$('#psearch');ps.oninput=()=>{S.psearch=ps.value;pfilter()};
+  const ps=$('#psearch');ps.oninput=()=>{S.psearch=ps.value;if(ps.value.trim()&&LS.get('cp.pcat','all')!=='all'){LS.set('cp.pcat','all');el.querySelectorAll('[data-pcat]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.pcat==='all'))}pfilter()};
   el.querySelectorAll('[data-pcat]').forEach(b=>b.onclick=()=>{LS.set('cp.pcat',b.dataset.pcat);el.querySelectorAll('[data-pcat]').forEach(x=>x.setAttribute('aria-pressed',x===b));pfilter()});
   el.querySelectorAll('details.skill').forEach(d=>d.ontoggle=()=>{if(d.open)op.add(d.dataset.sk);else op.delete(d.dataset.sk);$('#pexp').textContent=op.size?'Close all':'Open all'});
   $('#pexp').onclick=()=>{const all=!op.size;el.querySelectorAll('details.skill').forEach(d=>{if(!d.hidden)d.open=all})};
