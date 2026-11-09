@@ -66,7 +66,19 @@ ol.calls{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
 .skh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.skill h3{margin:0;font-size:16px;color:#d9620f}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .skill h3,:root:not([data-theme="light"]) .tcard h4,:root:not([data-theme="light"]) .pplan h4{color:#f5a05a}}:root[data-theme="dark"] .skill h3,:root[data-theme="dark"] .tcard h4,:root[data-theme="dark"] .pplan h4{color:#f5a05a}.skd{font-size:13px;color:var(--muted);white-space:nowrap;display:inline-flex;gap:4px;align-items:center}
 .skill p{margin:6px 0;font-size:14px;line-height:1.4}.skill ul{margin:4px 0 8px;padding-left:20px;font-size:14px;line-height:1.4}.skill li{margin:3px 0}
 .pplan{margin:10px 0;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}.pplan h4{margin:0 0 6px;font-size:15px;color:#d9620f}.pplan svg{width:100%;height:auto;display:block}
-.skill.wide{grid-column:1/-1}.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:10px 0}.tcard{border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}.tcard h4{margin:0;font-size:15px;color:#d9620f}.tcard p{margin:0;font-size:13px}.tcard svg{width:100%;height:auto;background:#a9cbe6;border-radius:8px}.tcard .row{margin-top:auto}.tcalls{font-size:12px;margin:2px 0}.tcalls span{font-size:12px}
+.skill.wide{grid-column:1/-1}
+.ptools{position:sticky;top:0;z-index:4;background:var(--bg);padding:8px 0 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--rule)}
+.ptools .psrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#psearch{flex:1 1 220px;min-width:0;font:inherit;font-size:15px;padding:8px 12px;border:1px solid var(--rule);border-radius:999px;background:var(--panel);color:var(--ink)}
+.pcats{display:flex;gap:6px;flex-wrap:wrap}.pcats button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--rule);background:var(--panel);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.pcats button[aria-pressed="true"]{background:#d9620f;border-color:#d9620f;color:#fff}.pcats button span{opacity:.7;font-weight:500;margin-left:4px}
+.ptoc{display:flex;gap:6px;flex-wrap:wrap}.ptoc button{font:inherit;font-size:12.5px;border:0;background:var(--chip);color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}.ptoc button.done::before{content:'✓ ';color:var(--ok);font-weight:700}
+.psec h3.pst{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.04em;font-size:17px;margin:18px 0 4px;color:var(--ink)}.psec .pss{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+details.skill>summary{list-style:none;cursor:pointer;display:block}details.skill>summary::-webkit-details-marker{display:none}
+details.skill>summary .skh h3::before{content:'▸ ';color:var(--muted)}details.skill[open]>summary .skh h3::before{content:'▾ '}
+details.skill>summary .sksum{margin:4px 0 0;font-size:13.5px;color:var(--muted);line-height:1.35}details.skill[open]>summary .sksum{display:none}
+.sktags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.sktags .chip{font-weight:600}.sktags .chip.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.pnone{padding:20px 0;color:var(--muted)}@media (max-width:640px){.ptoc,.pcats{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.ptoc button,.pcats button{flex:none}.ptoc::-webkit-scrollbar,.pcats::-webkit-scrollbar{display:none}}.psoon{font-size:13px;color:var(--muted);margin:6px 0 0}.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:10px 0}.tcard{border:1px solid var(--rule);border-radius:10px;padding:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}.tcard h4{margin:0;font-size:15px;color:#d9620f}.tcard p{margin:0;font-size:13px}.tcard svg{width:100%;height:auto;background:#a9cbe6;border-radius:8px}.tcard .row{margin-top:auto}.tcalls{font-size:12px;margin:2px 0}.tcalls span{font-size:12px}
 .pcalls{margin:8px 0 4px;padding-left:22px;font-size:13px}.pcalls li{margin:3px 0}.pcalls span{display:block;color:var(--muted)}
 .skc{display:flex;flex-direction:column;gap:4px;margin:6px 0;font-size:13px;font-style:italic;color:var(--muted);border-left:3px solid var(--accent);padding-left:8px}
 .skill .row,.qz .qos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.qz{border-bottom:1px solid var(--rule);padding:8px 0}.qz p{margin:4px 0;font-size:14px}
@@ -1411,6 +1423,10 @@ const SKILLS=[
   why:'Olympic cox Phelan Hill’s advice: record yourself, go through it piece by piece with your coach and crew, and fix one thing next time.',
   how:['Record your race audio (cox box recorder, or a phone in a dry bag).','Load your GPS file in the Replay tab and compare it with the shortest smooth line.','Go through each 500 m: which calls worked, where you lost the line.','Pick one thing to work on in practice this week.']}
 ];
+// the Drill page is organised by what the cox is racing (Audrey, 2026-11-09: easy to search and explore); 2K first for the spring season
+const PCATS=[['2k','2K racing','Straight buoyed lanes, standing start. The spring season.'],['steer','Steering','Lines, turns, bridges, wind: skills for every race.'],['head','Head racing','Rolling starts, passing and race plans for fall head races.'],['know','Rules and review','Know the rules, and learn from every race.']];
+const SKCAT={stake:'2k',turns:'steer',bridges:'steer',wind:'steer',straight:'steer',pass:'head',yield:'head',start:'head',plan:'head',rules:'know',review:'know'};
+const PSOON={'2k':'Coming next: lane steering on the buoys, racing the next lane, the 2K race plan by the 500s, the sprint finish, crosswind in lanes.'};
 const QUIZ=[
  {q:'You are a length of open water behind a slower crew. What do you do?',o:['Wait, then call from 4 or 5 lengths back next time','Call once, clearly, with their bow number and the side','Steer at their stern until they move'],a:1,why:'Call when you are close, once and clearly, and say which side.'},
  {q:'A faster crew is catching you. When must you start moving over?',o:['By the time their bow is half a length of open water from your stern','Once they overlap you','Never: they must go round you'],a:0,why:'Head of the Lake: movement to yield must begin when the passer is within half a length of open water.'},
@@ -1481,16 +1497,32 @@ function turnTip(t,sm){if(t.kind==='stake')return`A 2K start from a stake boat. 
   if(t.kind==='bridge')return`A ${deg}° starboard bend, then ${deg}° back to port, then about 20 strokes of straight water into a low bridge with an arch every 24 m. Only the racing arch (orange board) is yours: about 18 m between the piers, and your blades reach about 3.5 m each side. Finish the line-up bend early, be dead straight on the arch by “Bridge in 5”, then no rudder under the bridge.`;
   return`Two turns close together, ${deg}° to port then to starboard. Don’t let the rudder off fully between them: come out of the first already setting up for the second, and switch the pressure call to the other side.`}
 function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const done=LS.get('cp.skilldone',{}),last=LS.get('cp.drilllast',{});const qs=QUIZ;const qa=S.quiz||(S.quiz={});
-  el.innerHTML=`<h2>Drill</h2><p class="lead">The race skills every cox needs, for any regatta. Read each one, row the drills in 3D, and tick it once you have done it.</p>
-  <div class="pwater"><span class="sub">The 3D drills row on a drill lake of their own, not on a race course. ${SKILLS.filter(k=>done[k.id]).length} of ${SKILLS.length} skills done.</span></div>
-  <div class="skills">${SKILLS.map(k=>`<div class="skill${done[k.id]?' done':''}${k.turn?' wide':''}${k.lane?' lanecard':''}"><div class="skh"><h3>${esc(k.title)}</h3><label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Done</label></div>
+  const op=S.popen||(S.popen=new Set()),cat=LS.get('cp.pcat','all'),tlast=LS.get('cp.turnlast',{});
+  const tags=k=>[k.drill||k.lane||k.turn?'3D drill':null,k.turn?`${PRAC_TURNS.keys.filter(x=>!['bridge','wind','straight','start','plan','stake'].includes(PRAC_TURNS.info[x].kind)).length} turns`:null,k.quiz?'Quiz':null,k.tab?'Replay':null].filter(Boolean);
+  const stext=k=>[k.title,k.why,...k.how,...(k.calls||[]),...tags(k),(PCATS.find(c=>c[0]===SKCAT[k.id])||[])[1],...(k.turn?PRAC_TURNS.keys.map(x=>PRAC_TURNS.info[x].name):k.lane?[PRAC_TURNS.info[k.lane].name]:[])].join(' ').toLowerCase();
+  const card=k=>`<details class="skill${done[k.id]?' done':''}${k.turn?' wide':''}${k.lane?' lanecard':''}" id="sk-${k.id}" data-sk="${k.id}" data-text="${esc(stext(k))}"${op.has(k.id)?' open':''}><summary><div class="skh"><h3>${esc(k.title)}</h3></div><p class="sksum">${esc(k.why)}</p><div class="sktags">${done[k.id]?'<span class="chip ok">✓ Done</span>':''}${tags(k).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div></summary>
+    <label class="skd"><input type="checkbox" data-skd="${k.id}"${done[k.id]?' checked':''}> Done</label>
     <p>${esc(k.why)}</p><ul>${k.how.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>
     ${k.calls?`<div class="skc">${k.calls.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}${k.id==='pass'?passCard():k.id==='yield'?yieldCard():''}
     <div class="row">${k.drill?`<button class="btn" data-watch="${k.drill}">▶ Watch it first</button><button class="btn primary" data-drill="${k.drill}">${DRILLNAME[k.drill]} in 3D</button>`:''}${k.turn?turnCards():''}${k.lane?turnCards([k.lane]):''}${k.course?'<button class="btn primary" data-pcourse="1">Steer a course in 3D</button>':''}${k.tab?`<button class="btn" data-ptab="${k.tab}">Open ${k.tab==='calls'?'Calls':'Replay'} in Race</button>`:''}${k.quiz?'<button class="btn" data-pquiz="1">Take the quiz</button>':''}</div>
-    ${k.drill&&last[k.drill]?`<p class="sub">Last try: ${esc(last[k.drill])}</p>`:''}</div>`).join('')}</div>
+    ${k.drill&&last[k.drill]?`<p class="sub">Last try: ${esc(last[k.drill])}</p>`:''}</details>`;
+  const n=SKILLS.length,nd=SKILLS.filter(k=>done[k.id]).length;
+  el.innerHTML=`<h2>Drill</h2><p class="lead">The race skills every cox needs, for any regatta. Search or pick a section, open a skill to read it, row its drill in 3D, and tick it once you have done it. ${nd} of ${n} done.</p>
+  <div class="ptools"><div class="psrow"><input id="psearch" type="search" placeholder="Search skills, drills and calls: start, buoys, bridge, wind…" aria-label="Search the drills" value="${esc(S.psearch||'')}"><button class="btn" id="pexp">${op.size?'Close all':'Open all'}</button></div>
+    <div class="pcats" role="group" aria-label="Sections">${[['all','All'],...PCATS].map(([c,t])=>`<button data-pcat="${c}" aria-pressed="${c===cat}">${esc(t)}<span>${c==='all'?n:SKILLS.filter(k=>SKCAT[k.id]===c).length}</span></button>`).join('')}</div>
+    <div class="ptoc" aria-label="Jump to a skill">${PCATS.flatMap(([c])=>SKILLS.filter(k=>SKCAT[k.id]===c)).map(k=>`<button data-ptoc="${k.id}" data-pc="${SKCAT[k.id]}"${done[k.id]?' class="done"':''}>${esc(k.title)}</button>`).join('')}</div></div>
+  ${PCATS.map(([c,t,sub])=>`<section class="psec" data-psec="${c}"><h3 class="pst">${esc(t)}</h3><p class="pss">${esc(sub)}</p><div class="skills">${SKILLS.filter(k=>SKCAT[k.id]===c).map(card).join('')}</div>${PSOON[c]?`<p class="psoon">${esc(PSOON[c])}</p>`:''}</section>`).join('')}
+  <p class="pnone" id="pnone" hidden>No skill matches that search. Try a shorter word, like “start” or “turn”.</p>
+  <p class="sub">The 3D drills row on a drill lake of their own, not on a race course.</p>
   <h2 id="pquiz">Rules quiz</h2><div class="qzs">${qs.map((q,i)=>{const a=qa[i];return`<div class="qz"><p><b>${i+1}.</b> ${esc(q.q)}</p><div class="qos">${q.o.map((o,j)=>`<button class="btn qo${a!=null?(j===q.a?' right':j===a?' wrong':''):''}" data-q="${i}" data-o="${j}"${a!=null?' disabled':''}>${esc(o)}</button>`).join('')}</div>${a!=null?`<p class="sub">${a===q.a?'✓ Right.':'✗ Not quite.'} ${esc(q.why)}</p>`:''}</div>`}).join('')}
   <p class="sub">${Object.keys(qa).length} of ${qs.length} answered, ${qs.filter((q,i)=>qa[i]===q.a).length} right. <button class="lnk" id="qreset">Start again</button></p></div>
   <h2>Where this comes from</h2><ul class="sub psrc">${PSRC.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul>`;
+  pfilter();
+  const ps=$('#psearch');ps.oninput=()=>{S.psearch=ps.value;pfilter()};
+  el.querySelectorAll('[data-pcat]').forEach(b=>b.onclick=()=>{LS.set('cp.pcat',b.dataset.pcat);el.querySelectorAll('[data-pcat]').forEach(x=>x.setAttribute('aria-pressed',x===b));pfilter()});
+  el.querySelectorAll('details.skill').forEach(d=>d.ontoggle=()=>{if(d.open)op.add(d.dataset.sk);else op.delete(d.dataset.sk);$('#pexp').textContent=op.size?'Close all':'Open all'});
+  $('#pexp').onclick=()=>{const all=!op.size;el.querySelectorAll('details.skill').forEach(d=>{if(!d.hidden)d.open=all})};
+  el.querySelectorAll('[data-ptoc]').forEach(b=>b.onclick=()=>{const d=$('#sk-'+b.dataset.ptoc);if(d.hidden){S.psearch='';ps.value='';LS.set('cp.pcat','all');el.querySelectorAll('[data-pcat]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.pcat==='all'));pfilter()}d.open=true;const pg=$('#practice'),tb=el.querySelector('.ptools');pg.scrollTo({top:d.getBoundingClientRect().top-pg.getBoundingClientRect().top+pg.scrollTop-tb.offsetHeight-8,behavior:'smooth'})});
   el.querySelectorAll('[data-skd]').forEach(c=>c.onchange=()=>{const d=LS.get('cp.skilldone',{});if(c.checked)d[c.dataset.skd]=1;else delete d[c.dataset.skd];LS.set('cp.skilldone',d);keepScroll(renderPractice)});
   el.querySelectorAll('[data-drill]').forEach(b=>b.onclick=()=>startPractice({drill:b.dataset.drill}));
   el.querySelectorAll('[data-watch]').forEach(b=>b.onclick=()=>startPractice({drill:b.dataset.watch,mode:'ride'}));
@@ -1500,6 +1532,13 @@ function renderPractice(){const el=$('#practice');if(!el||el.hidden)return;const
   el.querySelectorAll('[data-pquiz]').forEach(b=>b.onclick=()=>$('#pquiz').scrollIntoView({behavior:'smooth'}));
   el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qa[+b.dataset.q]=+b.dataset.o;keepScroll(renderPractice)});
   $('#qreset').onclick=()=>{S.quiz={};renderPractice();$('#pquiz').scrollIntoView()}}
+// live search and section filter: hides cards in place, so typing keeps its focus
+function pfilter(){const el=$('#practice');if(!el)return;const q=(S.psearch||'').toLowerCase().trim().split(/\s+/).filter(Boolean).map(w=>w.length>4?w.replace(/s$/,''):w),cat=LS.get('cp.pcat','all');let any=0;
+  for(const sec of el.querySelectorAll('[data-psec]')){const on=cat==='all'||sec.dataset.psec===cat;let n=0;
+    for(const d of sec.querySelectorAll('details.skill')){const hit=on&&q.every(w=>d.dataset.text.includes(w));d.hidden=!hit;if(hit){n++;if(q.length&&!d.open)d.open=true}}
+    sec.hidden=!n;any+=n;const s=sec.querySelector('.psoon');if(s)s.hidden=!!q.length}
+  for(const b of el.querySelectorAll('[data-ptoc]')){const d=$('#sk-'+b.dataset.ptoc);b.style.opacity=d&&!d.hidden?'':'.45'}
+  $('#pnone').hidden=!!any}
 function keepScroll(fn){const el=$('#practice'),a=el.scrollTop,w=scrollY;fn();el.scrollTop=a;scrollTo(0,w)}
 // Practice is its own page, apart from any regatta (Audrey): the header switches between it and Race
 function setView(v){if((v==='practice')!==PRACTICE){LS.set('cp.view',v);location.reload();return}const app=document.querySelector('.app');app.dataset.view=v;$('#practice').hidden=v!=='practice';LS.set('cp.view',v);
