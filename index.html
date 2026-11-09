@@ -1934,7 +1934,8 @@ function makeBoat(o={}){
     const head=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),skin);head.position.y=1.03;body.add(head);
     const side=port?-1:1;const arm=new THREE.Mesh(new THREE.BoxGeometry(.6,.05,.05),rig);arm.position.set(side*.55,.36,0);r.add(arm);
     const piv=new THREE.Group();piv.position.set(side*.85,.4,0);r.add(piv);const oar=new THREE.Group();piv.add(oar);
-    const sh=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,3.8,6),shaft);sh.rotation.z=Math.PI/2;sh.position.x=side*(3.8/2-1.15);oar.add(sh);
+    // the shaft stops where the blade starts, so no rod shows through the blade (Audrey 2026-11-09)
+    const sh=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,3.32,6),shaft);sh.rotation.z=Math.PI/2;sh.position.x=side*(3.32/2-1.15);oar.add(sh);
     // school blade: burgundy with a golden yellow band across the tip
     const bl=new THREE.Group();bl.position.x=side*(3.8-1.15-.25);oar.add(bl);
     const b1=new THREE.Mesh(new THREE.BoxGeometry(.39,.24,.02),blade);b1.position.x=-side*.055;bl.add(b1);
